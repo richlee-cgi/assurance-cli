@@ -1,0 +1,8 @@
+.assurance-cache/
+.env
+.pytest_cache/
+.venv/
+__pycache__/
+*.py[cod]
+
+.DS_Store
