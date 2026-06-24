@@ -258,3 +258,7 @@ The implemented commands use read-only retrieval only. Jira and Confluence searc
 Azure commands are wrapped through an allowlisted `az` runner. Mutating verbs such as `create`, `update`, `delete`, `set`, `restart`, `deploy`, `publish`, `import`, and `sync` are blocked.
 
 Dataverse commands are wrapped through an allowlisted `pac` runner. Mutating operations such as solution import/export/publish/sync and environment changes are blocked.
+
+## License
+
+Licensed under the MIT License. See [LICENSE](LICENSE).
