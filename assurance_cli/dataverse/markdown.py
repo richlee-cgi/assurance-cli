@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from assurance_cli.markdown import document_header, fenced_json
+from assurance_cli.markdown import document_header, fenced_json, markdown_table
 from assurance_cli.util.redaction import redact
 
 
@@ -61,18 +61,59 @@ def render_pac_payload(payload: Any) -> str:
 
 
 def _dict_list_markdown(items: list[dict[str, Any]]) -> str:
-    lines = []
-    for item in items:
-        name = item.get("DisplayName") or item.get("displayName") or item.get("FriendlyName") or item.get("name") or item.get("Name") or item.get("EnvironmentId") or item.get("Id") or "Item"
-        lines.append(f"### {name}")
-        for key, value in sorted(item.items()):
-            if isinstance(value, (dict, list)):
-                continue
-            lines.append(f"- `{key}`: `{value}`")
-        complex_values = {key: value for key, value in item.items() if isinstance(value, (dict, list))}
-        if complex_values:
-            lines.append("")
-            lines.append(fenced_json(redact(complex_values)))
-        lines.append("")
-    return "\n".join(lines).strip() + "\n"
+    simple_keys = _selected_table_keys(items)
+    rows = [[item.get(key, "") for key in simple_keys] for item in items]
+    body = markdown_table(simple_keys, rows, max_cell_chars=140)
+    complex_values = [
+        {
+            "item": _item_name(item),
+            "values": {key: value for key, value in item.items() if isinstance(value, (dict, list))},
+        }
+        for item in items
+        if any(isinstance(value, (dict, list)) for value in item.values())
+    ]
+    if complex_values:
+        body += "\n### Complex Values\n\n"
+        body += fenced_json(redact(complex_values)) + "\n"
+    return body
 
+
+def _selected_table_keys(items: list[dict[str, Any]]) -> list[str]:
+    preferred = [
+        "DisplayName",
+        "displayName",
+        "FriendlyName",
+        "Name",
+        "name",
+        "EnvironmentId",
+        "Id",
+        "id",
+        "Url",
+        "url",
+        "State",
+        "state",
+        "Status",
+        "status",
+    ]
+    simple_keys = {
+        key
+        for item in items
+        for key, value in item.items()
+        if not isinstance(value, (dict, list))
+    }
+    ordered = [key for key in preferred if key in simple_keys]
+    ordered.extend(sorted(simple_keys - set(ordered)))
+    return ordered[:8]
+
+
+def _item_name(item: dict[str, Any]) -> str:
+    return str(
+        item.get("DisplayName")
+        or item.get("displayName")
+        or item.get("FriendlyName")
+        or item.get("name")
+        or item.get("Name")
+        or item.get("EnvironmentId")
+        or item.get("Id")
+        or "Item"
+    )

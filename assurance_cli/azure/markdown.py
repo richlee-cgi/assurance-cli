@@ -4,21 +4,23 @@ import json
 from collections import Counter
 from typing import Any
 
-from assurance_cli.markdown import document_header, fenced_json
+from assurance_cli.markdown import document_header, fenced_json, markdown_table
 from assurance_cli.util.redaction import redact
 
 
 def azure_check_markdown(*, account: dict[str, Any] | None, az_path: str | None, command: str) -> str:
     body = document_header("Azure CLI Check", "Azure", command, "Current Azure CLI context")
-    body += f"- Azure CLI path: `{az_path or 'not found'}`\n"
     if not account:
-        body += "- Current account: `not logged in or unavailable`\n"
-        return body
-    body += f"- Subscription: `{account.get('name')}`\n"
-    body += f"- Subscription ID: `{account.get('id')}`\n"
-    body += f"- Tenant: `{account.get('tenantDisplayName') or account.get('tenantId')}`\n"
-    body += f"- User: `{account.get('user', {}).get('name')}`\n"
-    return body
+        rows = [["Azure CLI path", az_path or "not found"], ["Current account", "not logged in or unavailable"]]
+    else:
+        rows = [
+            ["Azure CLI path", az_path or "not found"],
+            ["Subscription", account.get("name")],
+            ["Subscription ID", account.get("id")],
+            ["Tenant", account.get("tenantDisplayName") or account.get("tenantId")],
+            ["User", account.get("user", {}).get("name")],
+        ]
+    return body + markdown_table(["Field", "Value"], rows)
 
 
 def azure_resources_markdown(*, title: str, data: Any, command: str, scope: str) -> str:
@@ -26,6 +28,8 @@ def azure_resources_markdown(*, title: str, data: Any, command: str, scope: str)
     resources = _as_list(data)
     if not resources:
         return body + "_No Azure resources found._\n"
+    body += _resource_overview_table(resources)
+    body += "\n"
     for resource in resources:
         body += resource_markdown(resource)
     return body
@@ -33,17 +37,20 @@ def azure_resources_markdown(*, title: str, data: Any, command: str, scope: str)
 
 def resource_markdown(resource: dict[str, Any]) -> str:
     body = f"## {resource.get('name') or resource.get('id')}\n\n"
-    body += f"- Type: `{resource.get('type', '')}`\n"
-    body += f"- Resource group: `{resource.get('resourceGroup') or resource.get('resourceGroupName') or ''}`\n"
-    body += f"- Location: `{resource.get('location', '')}`\n"
+    rows = [
+        ["Type", resource.get("type", "")],
+        ["Resource group", resource.get("resourceGroup") or resource.get("resourceGroupName") or ""],
+        ["Location", resource.get("location", "")],
+    ]
     if resource.get("subscriptionId"):
-        body += f"- Subscription: `{resource.get('subscriptionId')}`\n"
+        rows.append(["Subscription", resource.get("subscriptionId")])
     if resource.get("id"):
-        body += f"- ID: `{resource.get('id')}`\n"
+        rows.append(["ID", resource.get("id")])
+    body += markdown_table(["Field", "Value"], rows, max_cell_chars=180)
     tags = resource.get("tags")
     if tags:
         body += "\n### Tags\n\n"
-        body += "\n".join(f"- `{key}`: `{value}`" for key, value in sorted(tags.items())) + "\n"
+        body += markdown_table(["Tag", "Value"], [[key, value] for key, value in sorted(tags.items())])
     selected = {
         key: value
         for key, value in resource.items()
@@ -64,7 +71,7 @@ def azure_snapshot_markdown(*, resource_group: str, resources: list[dict[str, An
     type_counts = Counter(resource.get("type", "Unknown") for resource in resources)
     if type_counts:
         body += "\n### Resource Types\n\n"
-        body += "\n".join(f"- `{resource_type}`: {count}" for resource_type, count in sorted(type_counts.items())) + "\n"
+        body += markdown_table(["Type", "Count"], [[resource_type, count] for resource_type, count in sorted(type_counts.items())])
     body += "\n## Resources\n\n"
     if not resources:
         body += "_No resources found._\n"
@@ -96,23 +103,26 @@ def function_apps_markdown(
         identity = app.get("identity") or {}
         user_assigned = identity.get("userAssignedIdentities") or {}
         body += f"## {name}\n\n"
-        body += f"- Resource group: `{app.get('resourceGroup')}`\n"
-        body += f"- Location: `{app.get('location')}`\n"
-        body += f"- State: `{app.get('state')}`\n"
-        body += f"- Runtime: `{runtime.get('name', '')} {runtime.get('version', '')}`\n"
-        body += f"- SKU: `{app.get('sku')}`\n"
-        body += f"- HTTPS only: `{app.get('httpsOnly')}`\n"
-        body += f"- Public network access: `{app.get('publicNetworkAccess')}`\n"
-        body += f"- Storage deployment type: `{storage.get('type')}`\n"
-        body += f"- Maximum instances: `{scale.get('maximumInstanceCount')}`\n"
-        body += f"- Identity type: `{identity.get('type')}`\n"
-        body += f"- User-assigned identities: `{len(user_assigned)}`\n"
+        rows = [
+            ["Resource group", app.get("resourceGroup")],
+            ["Location", app.get("location")],
+            ["State", app.get("state")],
+            ["Runtime", f"{runtime.get('name', '')} {runtime.get('version', '')}".strip()],
+            ["SKU", app.get("sku")],
+            ["HTTPS only", app.get("httpsOnly")],
+            ["Public network access", app.get("publicNetworkAccess")],
+            ["Storage deployment type", storage.get("type")],
+            ["Maximum instances", scale.get("maximumInstanceCount")],
+            ["Identity type", identity.get("type")],
+            ["User-assigned identities", len(user_assigned)],
+        ]
         if app.get("serverFarmId"):
-            body += f"- App Service plan: `{app.get('serverFarmId')}`\n"
+            rows.append(["App Service plan", app.get("serverFarmId")])
         if app.get("virtualNetworkSubnetId"):
-            body += f"- VNet subnet: `{app.get('virtualNetworkSubnetId')}`\n"
+            rows.append(["VNet subnet", app.get("virtualNetworkSubnetId")])
         if app.get("id"):
-            body += f"- ID: `{app.get('id')}`\n"
+            rows.append(["ID", app.get("id")])
+        body += markdown_table(["Field", "Value"], rows, max_cell_chars=180)
         if name in setting_errors:
             body += "\n### App Settings\n\n"
             body += f"_Unable to retrieve app settings: {setting_errors[name]}_\n"
@@ -126,11 +136,8 @@ def app_settings_markdown(*, name: str, settings: list[dict[str, Any]], show_val
     body = f"### App Settings: `{name}`\n\n"
     if not settings:
         return body + "_No app settings returned._\n"
-    for setting in settings:
-        key = setting.get("name")
-        value = setting.get("value") if show_values else "[REDACTED]"
-        body += f"- `{key}`: `{value}`\n"
-    return body
+    rows = [[setting.get("name"), setting.get("value") if show_values else "[REDACTED]"] for setting in settings]
+    return body + markdown_table(["Setting", "Value"], rows, max_cell_chars=180)
 
 
 def raw_json_section(title: str, data: Any) -> str:
@@ -145,3 +152,16 @@ def _as_list(data: Any) -> list[dict[str, Any]]:
     if isinstance(data, dict):
         return [data]
     return []
+
+
+def _resource_overview_table(resources: list[dict[str, Any]]) -> str:
+    rows = [
+        [
+            resource.get("name") or "",
+            resource.get("type") or "",
+            resource.get("resourceGroup") or resource.get("resourceGroupName") or "",
+            resource.get("location") or "",
+        ]
+        for resource in resources
+    ]
+    return markdown_table(["Name", "Type", "Resource group", "Location"], rows)

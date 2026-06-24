@@ -27,8 +27,15 @@ def test_render_pac_payload_text_fallback() -> None:
 
 def test_render_pac_payload_dict_list() -> None:
     markdown = render_pac_payload([{"DisplayName": "QA", "EnvironmentId": "123", "Url": "https://example"}])
-    assert "### QA" in markdown
-    assert "`EnvironmentId`: `123`" in markdown
+    assert "| DisplayName | EnvironmentId | Url |" in markdown
+    assert "| QA | 123 | https://example |" in markdown
+
+
+def test_render_pac_payload_preserves_complex_values() -> None:
+    markdown = render_pac_payload([{"DisplayName": "QA", "Settings": {"enabled": True}}])
+
+    assert "Complex Values" in markdown
+    assert '"enabled": true' in markdown
 
 
 def test_dataverse_check_markdown() -> None:

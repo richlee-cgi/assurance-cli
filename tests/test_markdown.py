@@ -1,4 +1,4 @@
-from assurance_cli.markdown import adf_to_markdown, html_to_md
+from assurance_cli.markdown import adf_to_markdown, html_to_md, markdown_table
 
 
 def test_html_to_md() -> None:
@@ -20,3 +20,10 @@ def test_adf_to_markdown_basic_marks() -> None:
     }
     assert adf_to_markdown(doc) == "**Hello** world"
 
+
+def test_markdown_table_escapes_and_truncates_cells() -> None:
+    table = markdown_table(["Name", "Value"], [["A|B", "one\ntwo"], ["Long", "x" * 20]], max_cell_chars=8)
+
+    assert "A\\|B" in table
+    assert "one<br>…" in table
+    assert "xxxxxxx…" in table

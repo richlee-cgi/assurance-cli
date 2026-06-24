@@ -41,6 +41,7 @@ def test_azure_check_markdown() -> None:
     )
     assert "# Azure CLI Check" in markdown
     assert "Example Subscription" in markdown
+    assert "| Field | Value |" in markdown
 
 
 def test_azure_snapshot_markdown_counts_resource_types() -> None:
@@ -52,7 +53,7 @@ def test_azure_snapshot_markdown_counts_resource_types() -> None:
         ],
         command="az resource list",
     )
-    assert "- `Microsoft.Web/sites`: 2" in markdown
+    assert "| Microsoft.Web/sites | 2 |" in markdown
 
 
 def test_function_apps_markdown_is_concise_and_reports_setting_errors() -> None:
@@ -82,7 +83,23 @@ def test_function_apps_markdown_is_concise_and_reports_setting_errors() -> None:
         command="az functionapp list",
         scope="rg",
     )
-    assert "Runtime: `node 22`" in markdown
-    assert "User-assigned identities: `1`" in markdown
+    assert "| Runtime | node 22 |" in markdown
+    assert "| User-assigned identities | 1 |" in markdown
     assert "AuthorizationFailed" in markdown
     assert "customDomainVerificationId" not in markdown
+
+
+def test_function_app_settings_render_as_table_and_redact_values() -> None:
+    markdown = function_apps_markdown(
+        apps=[{"name": "func", "resourceGroup": "rg"}],
+        settings_by_app={"func": [{"name": "A|B", "value": "secret\nline"}]},
+        setting_errors={},
+        show_values=False,
+        command="az functionapp list",
+        scope="rg",
+    )
+
+    assert "| Setting | Value |" in markdown
+    assert "A\\|B" in markdown
+    assert "[REDACTED]" in markdown
+    assert "secret" not in markdown

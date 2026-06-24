@@ -92,10 +92,41 @@ def fenced_json(value: Any) -> str:
     return "```json\n" + json.dumps(value, indent=2, sort_keys=True, ensure_ascii=False) + "\n```"
 
 
+def markdown_table(headers: list[str], rows: list[list[Any]], *, max_cell_chars: int = 120) -> str:
+    if not rows:
+        return ""
+    rendered_headers = [_table_cell(header, max_cell_chars=max_cell_chars) for header in headers]
+    lines = [
+        "| " + " | ".join(rendered_headers) + " |",
+        "| " + " | ".join("---" for _ in rendered_headers) + " |",
+    ]
+    for row in rows:
+        cells = [_table_cell(value, max_cell_chars=max_cell_chars) for value in row]
+        if len(cells) < len(rendered_headers):
+            cells.extend("" for _ in range(len(rendered_headers) - len(cells)))
+        lines.append("| " + " | ".join(cells[: len(rendered_headers)]) + " |")
+    return "\n".join(lines) + "\n"
+
+
+def _table_cell(value: Any, *, max_cell_chars: int) -> str:
+    if value is None:
+        text = ""
+    elif isinstance(value, bool):
+        text = "yes" if value else "no"
+    elif isinstance(value, (dict, list)):
+        text = json.dumps(value, sort_keys=True, ensure_ascii=False)
+    else:
+        text = str(value)
+    text = redact_text(text).replace("\r\n", "\n").replace("\r", "\n")
+    text = text.replace("|", "\\|").replace("\n", "<br>")
+    if max_cell_chars and len(text) > max_cell_chars:
+        text = text[: max_cell_chars - 1].rstrip() + "…"
+    return text
+
+
 def write_output(markdown: str, out: Path | None, stdout: bool = True) -> None:
     if out:
         out.parent.mkdir(parents=True, exist_ok=True)
         out.write_text(markdown, encoding="utf-8")
     if stdout:
         print(markdown, end="" if markdown.endswith("\n") else "\n")
-
