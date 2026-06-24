@@ -69,6 +69,8 @@ assurance report evidence-pack --<TAB>
 
 For VS Code Copilot agents or local model workflows, see [docs/assurance-cli-skill.md](docs/assurance-cli-skill.md). It describes when and how an agent should use the CLI to gather read-only assurance evidence.
 
+For a proposed local web UI wrapper that keeps the CLI standalone, see [docs/assurance-workbench-ui-spec.md](docs/assurance-workbench-ui-spec.md).
+
 ## Configure
 
 Create environment variables in your shell, or copy `.env.example` to `.env` and fill in local values:
