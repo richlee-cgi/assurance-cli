@@ -46,8 +46,8 @@ Goal: configure and verify the `assurance` executable without storing secrets.
 - [x] Configure default Jira project.
 - [x] Configure default Azure resource group.
 - [x] Add `assurance --help` health check.
-- [ ] Add `assurance azure check` health check.
-- [ ] Add `assurance dataverse check` health check.
+- [x] Add `assurance azure check` health check.
+- [x] Add `assurance dataverse check` health check.
 - [x] Store settings in a local ignored file.
 
 Acceptance:
