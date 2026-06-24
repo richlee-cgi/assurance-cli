@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+import os
+import ssl
 from typing import Any
 
+import certifi
 import httpx
 
 from assurance_cli.config import AtlassianConfig
@@ -11,11 +14,13 @@ from assurance_cli.exceptions import AssuranceError
 class AtlassianClient:
     def __init__(self, config: AtlassianConfig, timeout: float = 30.0) -> None:
         self.config = config
+        ssl_context = ssl.create_default_context(cafile=os.getenv("ASSURANCE_CA_BUNDLE") or certifi.where())
         self._client = httpx.Client(
             base_url=config.base_url,
             auth=(config.email, config.api_token),
             timeout=timeout,
             headers={"Accept": "application/json"},
+            verify=ssl_context,
         )
 
     def close(self) -> None:

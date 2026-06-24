@@ -87,21 +87,21 @@ Secrets are never intentionally printed or cached. The API token is used only fo
 
 Some corporate networks intercept TLS traffic through tools such as Zscaler. If Atlassian commands fail before authentication with an error like `CERTIFICATE_VERIFY_FAILED` or `unable to get local issuer certificate`, point Python/httpx at a CA bundle that trusts your network.
 
-Often the simplest local fix is to use the virtual environment's `certifi` bundle:
+Atlassian HTTP calls use the virtual environment's `certifi` bundle by default so a broken ambient `SSL_CERT_FILE` does not accidentally break the CLI. If your organisation provides a custom CA bundle, set `ASSURANCE_CA_BUNDLE` to that approved bundle:
 
 ```bash
-export SSL_CERT_FILE="$(pwd)/.venv/lib/python*/site-packages/certifi/cacert.pem"
+export ASSURANCE_CA_BUNDLE="$HOME/.certs/company-ca-bundle.pem"
 assurance confluence search "test" --limit 1
 assurance jira search "test" --limit 1
 ```
 
-For a persistent shell alias:
+If you need to force the `certifi` bundle from a shell:
 
 ```bash
-alias assurance='SSL_CERT_FILE="$HOME/dev/dev-cgi/assurance-cli/.venv/lib/python3.13/site-packages/certifi/cacert.pem" "$HOME/dev/dev-cgi/assurance-cli/.venv/bin/assurance"'
+export ASSURANCE_CA_BUNDLE="$(pwd)/.venv/lib/python*/site-packages/certifi/cacert.pem"
 ```
 
-If your organisation provides a custom CA bundle, use that approved bundle instead. Do not disable TLS verification.
+Do not disable TLS verification.
 
 Azure commands wrap the installed Azure CLI. Install and sign in before use:
 
