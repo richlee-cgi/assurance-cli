@@ -90,24 +90,24 @@ Acceptance:
 
 Goal: run the generated CLI command and capture outputs.
 
-- [ ] Create timestamped Workbench run folder.
-- [ ] Write `request.json`.
-- [ ] Write `command.txt`.
-- [ ] Execute CLI via subprocess argv list, not shell string.
+- [x] Create timestamped Workbench run folder.
+- [x] Write `request.json`.
+- [x] Write `command.txt`.
+- [x] Execute CLI via subprocess argv list, not shell string.
 - [ ] Stream stdout/stderr to UI.
-- [ ] Save `stdout.log`.
-- [ ] Save `stderr.log`.
-- [ ] Save `evidence-pack.md`.
-- [ ] Capture exit code.
+- [x] Save `stdout.log`.
+- [x] Save `stderr.log`.
+- [x] Save `evidence-pack.md`.
+- [x] Capture exit code.
 - [ ] Support cancellation.
-- [ ] Add timeout handling.
+- [x] Add timeout handling.
 
 Acceptance:
 
-- [ ] User can run an evidence pack from the UI.
-- [ ] Result is saved under the Workbench.
-- [ ] Logs and command metadata are retained.
-- [ ] Failed runs are visible and diagnosable.
+- [x] User can run an evidence pack from the UI.
+- [x] Result is saved under the Workbench.
+- [x] Logs and command metadata are retained.
+- [x] Failed runs are visible and diagnosable.
 
 ## Phase 5 - Results View
 
