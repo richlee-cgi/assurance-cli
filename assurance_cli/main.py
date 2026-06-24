@@ -1047,23 +1047,63 @@ def report_evidence_pack_cmd(
 
 
 @cache_app.command("list")
-def cache_list(cache_dir: Path = typer.Option(Path(".assurance-cache"), "--cache-dir")) -> None:
+def cache_list(
+    cache_dir: Path = typer.Option(Path(".assurance-cache"), "--cache-dir"),
+    verbose: bool = typer.Option(False, "--verbose"),
+    raw: bool = typer.Option(False, "--raw"),
+) -> None:
     cache = Cache(cache_dir)
     entries = cache.list_entries()
     if not entries:
         typer.echo("_No cache entries found._")
         return
+    if raw:
+        _emit({"entries": [cache.metadata_for_path(path) for path in entries]}, raw=True, out=None)
+        return
     for path in entries:
-        typer.echo(path.relative_to(cache_dir).with_suffix("").as_posix())
+        if not verbose:
+            typer.echo(cache.key_for_path(path))
+            continue
+        metadata = cache.metadata_for_path(path)
+        source = metadata.get("source") or "-"
+        endpoint = metadata.get("endpoint") or "-"
+        timestamp = metadata.get("timestamp") or "-"
+        typer.echo(f"{metadata['cache_key']}\t{timestamp}\t{source}\t{endpoint}\t{metadata['size_bytes']} bytes")
 
 
 @cache_app.command("show")
-def cache_show(cache_key: str, cache_dir: Path = typer.Option(Path(".assurance-cache"), "--cache-dir")) -> None:
+def cache_show(
+    cache_key: str,
+    cache_dir: Path = typer.Option(Path(".assurance-cache"), "--cache-dir"),
+    metadata_only: bool = typer.Option(False, "--metadata-only"),
+) -> None:
     cache = Cache(cache_dir)
-    path = cache.path_for(cache_key)
-    if not path.exists():
+    try:
+        envelope = cache.read_envelope(cache_key)
+    except FileNotFoundError as exc:
         raise AssuranceError(f"Cache entry not found: {cache_key}")
-    typer.echo(path.read_text(encoding="utf-8"))
+    if metadata_only:
+        envelope = {key: value for key, value in envelope.items() if key != "data"}
+    typer.echo(json.dumps(redact(envelope), indent=2, sort_keys=True, ensure_ascii=False))
+
+
+@cache_app.command("clear")
+def cache_clear(
+    cache_key: Optional[str] = typer.Argument(None),
+    all_entries: bool = typer.Option(False, "--all"),
+    cache_dir: Path = typer.Option(Path(".assurance-cache"), "--cache-dir"),
+) -> None:
+    if all_entries == bool(cache_key):
+        raise AssuranceError("Provide either a cache key or --all.")
+    cache = Cache(cache_dir)
+    if all_entries:
+        count = cache.clear_all()
+        typer.echo(f"Cleared {count} cache entr{'y' if count == 1 else 'ies'}.")
+        return
+    assert cache_key is not None
+    if not cache.clear(cache_key):
+        raise AssuranceError(f"Cache entry not found: {cache_key}")
+    typer.echo(f"Cleared cache entry: {cache_key}")
 
 
 @presets_app.command("list")

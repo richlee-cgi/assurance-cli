@@ -23,6 +23,9 @@ class Cache:
     def path_for(self, cache_key: str) -> Path:
         return self.root.joinpath(*cache_key.split("/")).with_suffix(".json")
 
+    def key_for_path(self, path: Path) -> str:
+        return path.relative_to(self.root).with_suffix("").as_posix()
+
     def get(self, cache_key: str) -> Any | None:
         if not self.enabled:
             return None
@@ -50,3 +53,49 @@ class Cache:
             return []
         return sorted(self.root.rglob("*.json"))
 
+    def read_envelope(self, cache_key: str) -> dict[str, Any]:
+        path = self.path_for(cache_key)
+        if not path.exists():
+            raise FileNotFoundError(cache_key)
+        with path.open("r", encoding="utf-8") as handle:
+            envelope = json.load(handle)
+        return envelope if isinstance(envelope, dict) else {"data": envelope}
+
+    def metadata_for_path(self, path: Path) -> dict[str, Any]:
+        with path.open("r", encoding="utf-8") as handle:
+            envelope = json.load(handle)
+        cache_key = envelope.get("cache_key") or self.key_for_path(path)
+        metadata = envelope.get("metadata") if isinstance(envelope.get("metadata"), dict) else {}
+        return {
+            "cache_key": cache_key,
+            "timestamp": envelope.get("timestamp"),
+            "source": metadata.get("source"),
+            "endpoint": metadata.get("endpoint"),
+            "path": str(path),
+            "size_bytes": path.stat().st_size,
+        }
+
+    def clear(self, cache_key: str) -> bool:
+        path = self.path_for(cache_key)
+        if not path.exists():
+            return False
+        path.unlink()
+        for parent in path.parents:
+            if parent == self.root or not parent.exists():
+                break
+            try:
+                parent.rmdir()
+            except OSError:
+                break
+        return True
+
+    def clear_all(self) -> int:
+        entries = self.list_entries()
+        for path in entries:
+            path.unlink()
+        for path in sorted((p for p in self.root.rglob("*") if p.is_dir()), reverse=True):
+            try:
+                path.rmdir()
+            except OSError:
+                pass
+        return len(entries)

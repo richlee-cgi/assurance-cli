@@ -190,7 +190,12 @@ Raw responses are cached under `.assurance-cache/` by default, with sensitive-lo
 
 ```bash
 assurance cache list
+assurance cache list --verbose
+assurance cache list --raw
 assurance cache show atlassian/jira/search/<hash>
+assurance cache show atlassian/jira/search/<hash> --metadata-only
+assurance cache clear atlassian/jira/search/<hash>
+assurance cache clear --all
 ```
 
 ## Safety
