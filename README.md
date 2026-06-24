@@ -24,6 +24,8 @@ Implemented so far:
 - `assurance dataverse connectors`
 - `assurance dataverse connections`
 - `assurance dataverse snapshot`
+- `assurance presets list`
+- `assurance presets show`
 - cache helpers
 
 ## Install for local development
@@ -43,8 +45,8 @@ Create environment variables in your shell, or copy `.env.example` to `.env` and
 export ATLASSIAN_BASE_URL="https://example.atlassian.net"
 export ATLASSIAN_EMAIL="you@example.com"
 export ATLASSIAN_API_TOKEN="..."
-export ATLASSIAN_DEFAULT_CONFLUENCE_SPACE="DSPBeta"
-export ATLASSIAN_DEFAULT_JIRA_PROJECT="DSP"
+export ATLASSIAN_DEFAULT_CONFLUENCE_SPACE="SPACE"
+export ATLASSIAN_DEFAULT_JIRA_PROJECT="PROJ"
 ```
 
 Secrets are never intentionally printed or cached. The API token is used only for HTTP Basic Auth.
@@ -69,17 +71,20 @@ pac auth list
 ## Examples
 
 ```bash
-assurance confluence search "booking allocation" --space DSP --limit 20
+assurance confluence search "booking allocation" --space SPACE --limit 20
 assurance confluence get --id 123456789 --out evidence/page.md
 assurance confluence evidence-pack "booking allocation" --space DSP --limit 10 --out evidence/confluence-pack.md
 assurance jira search "Dataverse" --project ABC --limit 30
 assurance jira get ABC-123 --include-comments --comment-limit 5
 assurance jira evidence-pack "Dataverse" --project ABC --include-comments --out evidence/jira-pack.md
-assurance report evidence-pack "booking allocation Dataverse" --confluence-space DSP --jira-project ABC --out evidence/pack.md
-assurance report evidence-pack "Dataverse" --include-azure --azure-resource-group rg-dsp-apps-dev-charlie-uks-001 --include-dataverse --limit 3 --out evidence/full-pack.md
+assurance report evidence-pack "booking allocation Dataverse" --confluence-space SPACE --jira-project ABC --out evidence/pack.md
+assurance presets list
+assurance presets show dataverse
+assurance report evidence-pack --preset dataverse --confluence-space SPACE --jira-project ABC --out evidence/dataverse-pack.md
+assurance report evidence-pack --preset scaling --include-azure --azure-resource-group rg-example-dev --limit 20 --out evidence/scaling-pack.md
 assurance azure check
 assurance azure resource-search "booking" --limit 20
-assurance azure snapshot --resource-group rg-dsp-apps-dev-charlie-uks-001 --out evidence/azure-snapshot.md
+assurance azure snapshot --resource-group rg-example-dev --out evidence/azure-snapshot.md
 assurance dataverse check
 assurance dataverse environments
 assurance dataverse snapshot --out evidence/dataverse-snapshot.md
@@ -95,12 +100,22 @@ assurance jira search --jql "project = ABC ORDER BY updated DESC" --raw
 
 `assurance report evidence-pack` queries Confluence and Jira by default. Add `--include-azure` to run a bounded Azure Resource Graph search for the topic, and add `--include-dataverse` to include a Dataverse snapshot from the current `pac` profile.
 
+Built-in presets provide common assurance search topics and inclusion defaults:
+
+```bash
+assurance presets list
+assurance presets show architecture
+assurance report evidence-pack --preset architecture --confluence-space SPACE --jira-project PROJ --out evidence/architecture-pack.md
+```
+
+Passing a topic with `--preset` overrides only the preset search text; the preset still supplies its inclusion defaults.
+
 Use `--azure-resource-group` when possible to keep Azure evidence focused:
 
 ```bash
 assurance report evidence-pack "Reservations API" \
   --include-azure \
-  --azure-resource-group rg-dsp-apps-dev-charlie-uks-001 \
+  --azure-resource-group rg-example-dev \
   --include-dataverse \
   --limit 3 \
   --out evidence/reservations-api-pack.md

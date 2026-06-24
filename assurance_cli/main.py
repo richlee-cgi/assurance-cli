@@ -33,6 +33,7 @@ from assurance_cli.dataverse.markdown import (
 from assurance_cli.dataverse.pac import pac_path, run_pac
 from assurance_cli.exceptions import AssuranceError, ConfigError
 from assurance_cli.markdown import document_header, write_output
+from assurance_cli.presets import get_preset, list_presets
 from assurance_cli.reports.evidence_pack import (
     combined_evidence_pack_markdown,
     confluence_evidence_pack_markdown,
@@ -47,6 +48,7 @@ azure_app = typer.Typer(help="Read-only Azure CLI wrappers.")
 dataverse_app = typer.Typer(help="Read-only Dataverse / Power Platform CLI wrappers.")
 cache_app = typer.Typer(help="Inspect local assurance cache.")
 report_app = typer.Typer(help="Compose multi-system evidence reports.")
+presets_app = typer.Typer(help="List built-in evidence query presets.")
 
 app.add_typer(confluence_app, name="confluence")
 app.add_typer(jira_app, name="jira")
@@ -54,6 +56,7 @@ app.add_typer(azure_app, name="azure")
 app.add_typer(dataverse_app, name="dataverse")
 app.add_typer(cache_app, name="cache")
 app.add_typer(report_app, name="report")
+app.add_typer(presets_app, name="presets")
 
 stderr = Console(stderr=True)
 
@@ -892,7 +895,8 @@ def dataverse_snapshot_cmd(
 
 @report_app.command("evidence-pack")
 def report_evidence_pack_cmd(
-    topic: str = typer.Argument(...),
+    topic: Optional[str] = typer.Argument(None),
+    preset: Optional[str] = typer.Option(None, "--preset", help="Use a built-in query preset."),
     confluence_space: Optional[str] = typer.Option(None, "--confluence-space"),
     jira_project: Optional[str] = typer.Option(None, "--jira-project"),
     skip_confluence: bool = typer.Option(False, "--skip-confluence"),
@@ -909,6 +913,20 @@ def report_evidence_pack_cmd(
     no_cache: bool = typer.Option(False, "--no-cache"),
     refresh: bool = typer.Option(False, "--refresh"),
 ) -> None:
+    if preset:
+        try:
+            selected_preset = get_preset(preset)
+        except ValueError as exc:
+            raise AssuranceError(str(exc)) from exc
+        topic = topic or selected_preset.topic
+        include_azure = include_azure or selected_preset.include_azure
+        include_dataverse = include_dataverse or selected_preset.include_dataverse
+        include_comments = include_comments or selected_preset.include_comments
+        limit = max(limit, selected_preset.limit)
+        max_page_chars = max(max_page_chars, selected_preset.max_page_chars)
+    if not topic:
+        raise AssuranceError("Provide a topic argument or --preset.")
+
     config = load_config().atlassian
     cache = _cache(cache_dir, no_cache)
     gaps: list[str] = []
@@ -1046,6 +1064,47 @@ def cache_show(cache_key: str, cache_dir: Path = typer.Option(Path(".assurance-c
     if not path.exists():
         raise AssuranceError(f"Cache entry not found: {cache_key}")
     typer.echo(path.read_text(encoding="utf-8"))
+
+
+@presets_app.command("list")
+def presets_list(raw: bool = typer.Option(False, "--raw")) -> None:
+    presets = list_presets()
+    if raw:
+        _emit({"presets": [preset.__dict__ for preset in presets]}, raw=True, out=None)
+        return
+    lines = ["# Evidence Presets", ""]
+    for preset in presets:
+        lines.append(f"- `{preset.name}`: {preset.summary}")
+        lines.append(f"  - Topic: `{preset.topic}`")
+        lines.append(f"  - Azure: `{'yes' if preset.include_azure else 'no'}`")
+        lines.append(f"  - Dataverse: `{'yes' if preset.include_dataverse else 'no'}`")
+    typer.echo("\n".join(lines))
+
+
+@presets_app.command("show")
+def presets_show(name: str, raw: bool = typer.Option(False, "--raw")) -> None:
+    try:
+        preset = get_preset(name)
+    except ValueError as exc:
+        raise AssuranceError(str(exc)) from exc
+    if raw:
+        _emit(preset.__dict__, raw=True, out=None)
+        return
+    typer.echo(
+        "\n".join(
+            [
+                f"# Evidence Preset: {preset.name}",
+                "",
+                preset.summary,
+                "",
+                f"- Topic: `{preset.topic}`",
+                f"- Azure: `{'yes' if preset.include_azure else 'no'}`",
+                f"- Dataverse: `{'yes' if preset.include_dataverse else 'no'}`",
+                f"- Include comments: `{'yes' if preset.include_comments else 'no'}`",
+                f"- Limit: `{preset.limit}`",
+            ]
+        )
+    )
 
 
 def main() -> int:

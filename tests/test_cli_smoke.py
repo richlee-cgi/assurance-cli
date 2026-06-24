@@ -9,6 +9,7 @@ def test_help() -> None:
     assert "confluence" in result.output
     assert "jira" in result.output
     assert "report" in result.output
+    assert "presets" in result.output
 
 
 def test_azure_check_dry_run() -> None:
@@ -23,3 +24,4 @@ def test_evidence_pack_help() -> None:
     assert "--confluence-space" in result.output
     assert "--jira-project" in result.output
     assert "--azure-resource-group" in result.output
+    assert "--preset" in result.output

@@ -23,8 +23,8 @@ def test_resource_graph_query() -> None:
     query = build_resource_graph_query(
         query="booking",
         resource_type="microsoft.web/sites",
-        resource_group="rg-dsp",
-        tags=("Project=dsp",),
+        resource_group="rg-example",
+        tags=("Project=example",),
         limit=10,
     )
     assert "name contains 'booking'" in query
