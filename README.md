@@ -83,6 +83,26 @@ export ATLASSIAN_DEFAULT_JIRA_PROJECT="PROJ"
 
 Secrets are never intentionally printed or cached. The API token is used only for HTTP Basic Auth.
 
+### Corporate TLS / Zscaler
+
+Some corporate networks intercept TLS traffic through tools such as Zscaler. If Atlassian commands fail before authentication with an error like `CERTIFICATE_VERIFY_FAILED` or `unable to get local issuer certificate`, point Python/httpx at a CA bundle that trusts your network.
+
+Often the simplest local fix is to use the virtual environment's `certifi` bundle:
+
+```bash
+export SSL_CERT_FILE="$(pwd)/.venv/lib/python*/site-packages/certifi/cacert.pem"
+assurance confluence search "test" --limit 1
+assurance jira search "test" --limit 1
+```
+
+For a persistent shell alias:
+
+```bash
+alias assurance='SSL_CERT_FILE="$HOME/dev/dev-cgi/assurance-cli/.venv/lib/python3.13/site-packages/certifi/cacert.pem" "$HOME/dev/dev-cgi/assurance-cli/.venv/bin/assurance"'
+```
+
+If your organisation provides a custom CA bundle, use that approved bundle instead. Do not disable TLS verification.
+
 Azure commands wrap the installed Azure CLI. Install and sign in before use:
 
 ```bash
