@@ -60,31 +60,31 @@ Acceptance:
 
 Goal: configure common evidence pack runs from the browser.
 
-- [ ] Topic input.
-- [ ] Preset dropdown:
-  - [ ] none
-  - [ ] architecture
-  - [ ] dataverse
-  - [ ] scaling
-- [ ] Source checkboxes:
-  - [ ] Confluence
-  - [ ] Jira
-  - [ ] Azure
-  - [ ] Dataverse
-- [ ] Confluence space input.
-- [ ] Jira project input.
-- [ ] Azure resource group input.
-- [ ] Limit input.
-- [ ] Include Jira comments checkbox.
-- [ ] Refresh cache checkbox.
-- [ ] No cache checkbox.
+- [x] Topic input.
+- [x] Preset dropdown:
+  - [x] none
+  - [x] architecture
+  - [x] dataverse
+  - [x] scaling
+- [x] Source checkboxes:
+  - [x] Confluence
+  - [x] Jira
+  - [x] Azure
+  - [x] Dataverse
+- [x] Confluence space input.
+- [x] Jira project input.
+- [x] Azure resource group input.
+- [x] Limit input.
+- [x] Include Jira comments checkbox.
+- [x] Refresh cache checkbox.
+- [x] No cache checkbox.
 - [ ] Output folder preview.
-- [ ] Command preview.
+- [x] Command preview.
 
 Acceptance:
 
-- [ ] Form generates the expected `assurance report evidence-pack` command.
-- [ ] Command preview updates when inputs change.
+- [x] Form generates the expected `assurance report evidence-pack` command.
+- [x] Command preview updates when inputs change.
 
 ## Phase 4 - Run Execution
 
