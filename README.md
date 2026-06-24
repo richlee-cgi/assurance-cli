@@ -2,7 +2,7 @@
 
 Read-only Python CLI for gathering assurance evidence from Confluence, Jira, Azure, and Dataverse/Power Platform, with Markdown-first output.
 
-Implemented so far:
+Command groups:
 
 - `assurance confluence search`
 - `assurance confluence get`
@@ -26,7 +26,9 @@ Implemented so far:
 - `assurance dataverse snapshot`
 - `assurance presets list`
 - `assurance presets show`
-- cache helpers
+- `assurance cache list`
+- `assurance cache show`
+- `assurance cache clear`
 
 ## Install for local development
 
@@ -35,6 +37,32 @@ cd assurance-cli
 python3 -m venv .venv
 . .venv/bin/activate
 python -m pip install -e ".[dev]"
+```
+
+## Shell completion
+
+The CLI uses Typer, so shell completion is available after local installation.
+
+Install completion for your current shell:
+
+```bash
+assurance --install-completion
+```
+
+Or generate completion script text for a specific shell:
+
+```bash
+assurance --show-completion zsh
+assurance --show-completion bash
+assurance --show-completion fish
+```
+
+Restart the shell after installation. Completion should then work for command groups and options, for example:
+
+```bash
+assurance <TAB>
+assurance jira <TAB>
+assurance report evidence-pack --<TAB>
 ```
 
 ## Configure
@@ -94,6 +122,7 @@ Raw JSON can be emitted where useful:
 
 ```bash
 assurance jira search --jql "project = ABC ORDER BY updated DESC" --raw
+assurance azure resource-search "booking" --raw
 ```
 
 ## Command notes
