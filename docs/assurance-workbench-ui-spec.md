@@ -1,5 +1,7 @@
 # Assurance Workbench UI Spec
 
+Implementation tracking lives in [assurance-workbench-ui-plan.md](assurance-workbench-ui-plan.md).
+
 ## Purpose
 
 Build a local web UI that helps users run `assurance-cli` evidence-gathering workflows without replacing the CLI.

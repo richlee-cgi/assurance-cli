@@ -1,0 +1,205 @@
+# Assurance Workbench UI Plan
+
+This plan tracks implementation of a local HTMX-based web UI wrapper around `assurance-cli`.
+
+The CLI remains standalone. The UI invokes the CLI and persists evidence into the Workbench.
+
+## Phase 0 - Decisions And Boundaries
+
+- [x] Keep `assurance-cli` standalone.
+- [x] Avoid RAG for v1.
+- [x] Avoid local LLM/Ollama integration for v1.
+- [x] Use the Workbench filesystem as persistence.
+- [x] Start with HTMX rather than React/Vite.
+- [ ] Decide whether UI lives in this repo initially or a sibling repo.
+- [ ] Decide default Workbench evidence root on the target machine.
+
+## Phase 1 - Minimal Local Web App
+
+Goal: start a local web server and render a basic UI.
+
+- [ ] Create `assurance-workbench-ui` project skeleton.
+- [ ] Add FastAPI dependency set.
+- [ ] Add Jinja templates.
+- [ ] Add HTMX static asset strategy.
+- [ ] Add simple app layout:
+  - [ ] Header.
+  - [ ] Navigation.
+  - [ ] Main content area.
+- [ ] Add local dev command.
+- [ ] Add README setup instructions.
+- [ ] Verify app starts locally.
+
+Acceptance:
+
+- [ ] User can run one command and open the UI in a browser.
+- [ ] UI shows home page and basic navigation.
+
+## Phase 2 - CLI Discovery And Settings
+
+Goal: configure and verify the `assurance` executable without storing secrets.
+
+- [ ] Settings page.
+- [ ] Configure path to `assurance` executable.
+- [ ] Configure Workbench evidence root.
+- [ ] Configure default Confluence space.
+- [ ] Configure default Jira project.
+- [ ] Configure default Azure resource group.
+- [ ] Add `assurance --help` health check.
+- [ ] Add `assurance azure check` health check.
+- [ ] Add `assurance dataverse check` health check.
+- [ ] Store settings in a local ignored file.
+
+Acceptance:
+
+- [ ] UI can verify the CLI path.
+- [ ] UI can show configured defaults.
+- [ ] No credentials are stored or displayed.
+
+## Phase 3 - Evidence Pack Form
+
+Goal: configure common evidence pack runs from the browser.
+
+- [ ] Topic input.
+- [ ] Preset dropdown:
+  - [ ] none
+  - [ ] architecture
+  - [ ] dataverse
+  - [ ] scaling
+- [ ] Source checkboxes:
+  - [ ] Confluence
+  - [ ] Jira
+  - [ ] Azure
+  - [ ] Dataverse
+- [ ] Confluence space input.
+- [ ] Jira project input.
+- [ ] Azure resource group input.
+- [ ] Limit input.
+- [ ] Include Jira comments checkbox.
+- [ ] Refresh cache checkbox.
+- [ ] No cache checkbox.
+- [ ] Output folder preview.
+- [ ] Command preview.
+
+Acceptance:
+
+- [ ] Form generates the expected `assurance report evidence-pack` command.
+- [ ] Command preview updates when inputs change.
+
+## Phase 4 - Run Execution
+
+Goal: run the generated CLI command and capture outputs.
+
+- [ ] Create timestamped Workbench run folder.
+- [ ] Write `request.json`.
+- [ ] Write `command.txt`.
+- [ ] Execute CLI via subprocess argv list, not shell string.
+- [ ] Stream stdout/stderr to UI.
+- [ ] Save `stdout.log`.
+- [ ] Save `stderr.log`.
+- [ ] Save `evidence-pack.md`.
+- [ ] Capture exit code.
+- [ ] Support cancellation.
+- [ ] Add timeout handling.
+
+Acceptance:
+
+- [ ] User can run an evidence pack from the UI.
+- [ ] Result is saved under the Workbench.
+- [ ] Logs and command metadata are retained.
+- [ ] Failed runs are visible and diagnosable.
+
+## Phase 5 - Results View
+
+Goal: display completed evidence in an organised way.
+
+- [ ] Render Markdown evidence pack.
+- [ ] Show run metadata.
+- [ ] Show command executed.
+- [ ] Show source coverage:
+  - [ ] Confluence.
+  - [ ] Jira.
+  - [ ] Azure.
+  - [ ] Dataverse.
+- [ ] Show gaps and warnings.
+- [ ] Add “open output folder” action.
+- [ ] Add “open in VS Code” action if feasible.
+
+Acceptance:
+
+- [ ] User can inspect a completed evidence pack in the browser.
+- [ ] User can navigate to saved files.
+
+## Phase 6 - Previous Runs
+
+Goal: browse existing Workbench evidence runs.
+
+- [ ] Scan configured runs folder.
+- [ ] Parse `request.json`.
+- [ ] Parse run status from exit code/log files.
+- [ ] List previous runs.
+- [ ] Filter by topic.
+- [ ] Filter by preset/source.
+- [ ] Open previous run.
+- [ ] Re-run from previous `request.json`.
+
+Acceptance:
+
+- [ ] User can find and reopen previous evidence runs.
+- [ ] User can re-run a previous request.
+
+## Phase 7 - Deterministic Analysis
+
+Goal: add explainable non-GenAI analysis.
+
+- [ ] Define analysis rule schema.
+- [ ] Implement evidence coverage rules:
+  - [ ] Confluence missing.
+  - [ ] Jira missing.
+  - [ ] Azure missing when requested.
+  - [ ] Dataverse missing when requested.
+- [ ] Implement freshness checks.
+- [ ] Implement Azure risk flags:
+  - [ ] Function settings unavailable.
+  - [ ] Public network access appears enabled.
+  - [ ] Managed identity appears missing.
+- [ ] Implement Jira risk flags:
+  - [ ] No issues found.
+  - [ ] Stale open issues.
+  - [ ] High priority issues present.
+- [ ] Write `analysis.json`.
+- [ ] Write `analysis.md`.
+- [ ] Display analysis in results view.
+
+Acceptance:
+
+- [ ] UI produces repeatable, explainable findings without GenAI.
+- [ ] Each finding has rule ID, severity, source, explanation and follow-up question.
+
+## Phase 8 - Polish And Packaging
+
+Goal: make the local UI easy to run and maintain.
+
+- [ ] Add tests for command generation.
+- [ ] Add tests for run folder creation.
+- [ ] Add tests for deterministic analysis rules.
+- [ ] Add basic UI route tests.
+- [ ] Add setup instructions for official work Mac.
+- [ ] Add screenshots if useful.
+- [ ] Add `.gitignore` for local settings and run artifacts.
+- [ ] Decide whether to tag first UI release.
+
+Acceptance:
+
+- [ ] User can install and run the UI from a clean checkout.
+- [ ] Tests cover core behavior.
+- [ ] Docs explain setup and operation.
+
+## Deferred Ideas
+
+- [ ] Ollama/Qwen local analysis, explicitly marked as draft/unverified.
+- [ ] PDF export.
+- [ ] Evidence run comparison.
+- [ ] Configurable analysis rule packs.
+- [ ] Git commit support for evidence packs.
+- [ ] Library-mode integration with `assurance_cli` internals.
