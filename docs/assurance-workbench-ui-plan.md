@@ -11,29 +11,29 @@ The CLI remains standalone. The UI invokes the CLI and persists evidence into th
 - [x] Avoid local LLM/Ollama integration for v1.
 - [x] Use the Workbench filesystem as persistence.
 - [x] Start with HTMX rather than React/Vite.
-- [ ] Decide whether UI lives in this repo initially or a sibling repo.
+- [x] Decide whether UI lives in this repo initially or a sibling repo.
 - [ ] Decide default Workbench evidence root on the target machine.
 
 ## Phase 1 - Minimal Local Web App
 
 Goal: start a local web server and render a basic UI.
 
-- [ ] Create `assurance-workbench-ui` project skeleton.
-- [ ] Add FastAPI dependency set.
-- [ ] Add Jinja templates.
-- [ ] Add HTMX static asset strategy.
-- [ ] Add simple app layout:
-  - [ ] Header.
-  - [ ] Navigation.
-  - [ ] Main content area.
-- [ ] Add local dev command.
-- [ ] Add README setup instructions.
-- [ ] Verify app starts locally.
+- [x] Create `assurance-workbench-ui` project skeleton.
+- [x] Add FastAPI dependency set.
+- [x] Add Jinja templates.
+- [x] Add HTMX static asset strategy.
+- [x] Add simple app layout:
+  - [x] Header.
+  - [x] Navigation.
+  - [x] Main content area.
+- [x] Add local dev command.
+- [x] Add README setup instructions.
+- [x] Verify app starts locally.
 
 Acceptance:
 
-- [ ] User can run one command and open the UI in a browser.
-- [ ] UI shows home page and basic navigation.
+- [x] User can run one command and open the UI in a browser.
+- [x] UI shows home page and basic navigation.
 
 ## Phase 2 - CLI Discovery And Settings
 
