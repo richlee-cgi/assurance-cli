@@ -39,22 +39,22 @@ Acceptance:
 
 Goal: configure and verify the `assurance` executable without storing secrets.
 
-- [ ] Settings page.
-- [ ] Configure path to `assurance` executable.
-- [ ] Configure Workbench evidence root.
-- [ ] Configure default Confluence space.
-- [ ] Configure default Jira project.
-- [ ] Configure default Azure resource group.
-- [ ] Add `assurance --help` health check.
+- [x] Settings page.
+- [x] Configure path to `assurance` executable.
+- [x] Configure Workbench evidence root.
+- [x] Configure default Confluence space.
+- [x] Configure default Jira project.
+- [x] Configure default Azure resource group.
+- [x] Add `assurance --help` health check.
 - [ ] Add `assurance azure check` health check.
 - [ ] Add `assurance dataverse check` health check.
-- [ ] Store settings in a local ignored file.
+- [x] Store settings in a local ignored file.
 
 Acceptance:
 
-- [ ] UI can verify the CLI path.
-- [ ] UI can show configured defaults.
-- [ ] No credentials are stored or displayed.
+- [x] UI can verify the CLI path.
+- [x] UI can show configured defaults.
+- [x] No credentials are stored or displayed.
 
 ## Phase 3 - Evidence Pack Form
 
