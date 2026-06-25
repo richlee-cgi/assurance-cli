@@ -16,27 +16,50 @@ class EvidencePreset:
 
 
 BUILTIN_PRESETS: dict[str, EvidencePreset] = {
-    "dataverse": EvidencePreset(
-        name="dataverse",
-        summary="Evidence about Dataverse and Power Platform usage.",
-        topic="Dataverse Power Platform solution connector connection reference",
-        include_dataverse=True,
-        limit=10,
-    ),
-    "scaling": EvidencePreset(
-        name="scaling",
-        summary="Evidence about scaling, performance, APIM, and Functions.",
-        topic="APIM Functions scaling performance capacity timeout",
-        include_azure=True,
-        include_comments=True,
-        limit=20,
-    ),
     "architecture": EvidencePreset(
         name="architecture",
         summary="Architecture, design decision, integration, and dependency evidence.",
         topic="architecture design decision integration dependency",
         include_azure=True,
         limit=15,
+    ),
+    "dataverse": EvidencePreset(
+        name="dataverse",
+        summary="Dataverse, Power Platform, solutions, connectors, and connection reference evidence.",
+        topic="Dataverse Power Platform solution connector connection reference",
+        include_dataverse=True,
+        limit=10,
+    ),
+    "delivery": EvidencePreset(
+        name="delivery",
+        summary="Delivery trail, implementation ticket, status, release, and blocker evidence.",
+        topic="delivery implementation ticket story epic release status blocker defect",
+        include_comments=True,
+        limit=20,
+    ),
+    "operations": EvidencePreset(
+        name="operations",
+        summary="Operational readiness, deployment, monitoring, alerting, and runtime evidence.",
+        topic="operations deployment monitoring alert incident configuration resource health",
+        include_azure=True,
+        include_comments=True,
+        limit=20,
+    ),
+    "performance": EvidencePreset(
+        name="performance",
+        summary="Performance, scaling, APIM, Functions, capacity, and timeout evidence.",
+        topic="APIM Functions scaling performance capacity timeout",
+        include_azure=True,
+        include_comments=True,
+        limit=20,
+    ),
+    "risk": EvidencePreset(
+        name="risk",
+        summary="Known risk, blocker, incident, defect, security concern, and mitigation evidence.",
+        topic="risk blocker incident defect vulnerability unsupported dependency mitigation warning failed unresolved",
+        include_azure=True,
+        include_comments=True,
+        limit=20,
     ),
 }
 

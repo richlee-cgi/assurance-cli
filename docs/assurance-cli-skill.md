@@ -79,8 +79,11 @@ assurance report evidence-pack --preset architecture \
 Useful built-in presets:
 
 - `architecture`: architecture, design decisions, integrations and dependencies.
+- `delivery`: delivery trail, implementation tickets, status, releases and blockers.
+- `operations`: operational readiness, deployment, monitoring, alerting and runtime state.
 - `dataverse`: Dataverse, Power Platform, solutions, connectors and connection references.
-- `scaling`: APIM, Functions, scaling, performance, capacity and timeout concerns.
+- `performance`: APIM, Functions, scaling, performance, capacity and timeout concerns.
+- `risk`: known risks, blockers, incidents, defects, security concerns, unsupported dependencies and mitigations.
 
 If the user provides a specific topic with `--preset`, the topic overrides the preset search text while the preset still supplies inclusion defaults.
 

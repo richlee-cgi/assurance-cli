@@ -65,8 +65,11 @@ Goal: configure common evidence pack runs from the browser.
 - [x] Preset dropdown:
   - [x] none
   - [x] architecture
+  - [x] delivery
+  - [x] operations
   - [x] dataverse
-  - [x] scaling
+  - [x] performance
+  - [x] risk
 - [x] Source checkboxes:
   - [x] Confluence
   - [x] Jira

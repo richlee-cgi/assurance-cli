@@ -129,8 +129,11 @@ Inputs:
 - Preset dropdown:
   - `none`
   - `architecture`
+  - `delivery`
+  - `operations`
   - `dataverse`
-  - `scaling`
+  - `performance`
+  - `risk`
 - Source checkboxes:
   - Confluence
   - Jira

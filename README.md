@@ -138,7 +138,7 @@ assurance report evidence-pack "booking allocation Dataverse" --confluence-space
 assurance presets list
 assurance presets show dataverse
 assurance report evidence-pack --preset dataverse --confluence-space SPACE --jira-project ABC --out evidence/dataverse-pack.md
-assurance report evidence-pack --preset scaling --include-azure --azure-resource-group rg-example-dev --limit 20 --out evidence/scaling-pack.md
+assurance report evidence-pack --preset performance --include-azure --azure-resource-group rg-example-dev --limit 20 --out evidence/performance-pack.md
 assurance azure check
 assurance azure resource-search "booking" --limit 20
 assurance azure snapshot --resource-group rg-example-dev --out evidence/azure-snapshot.md
@@ -238,6 +238,8 @@ assurance presets list
 assurance presets show architecture
 assurance report evidence-pack --preset architecture --confluence-space SPACE --jira-project PROJ --out evidence/architecture-pack.md
 ```
+
+Available presets are `architecture`, `delivery`, `operations`, `dataverse`, `performance`, and `risk`.
 
 Passing a topic with `--preset` overrides only the preset search text; the preset still supplies its inclusion defaults.
 

@@ -7,7 +7,7 @@ from assurance_cli.presets import get_preset, list_presets
 def test_builtin_presets_are_available() -> None:
     names = {preset.name for preset in list_presets()}
 
-    assert {"architecture", "dataverse", "scaling"} <= names
+    assert {"architecture", "dataverse", "delivery", "operations", "performance", "risk"} <= names
 
 
 def test_get_preset_reports_available_names() -> None:
@@ -29,8 +29,8 @@ def test_presets_list_command() -> None:
 
 
 def test_presets_show_raw_command() -> None:
-    result = CliRunner().invoke(app, ["presets", "show", "scaling", "--raw"])
+    result = CliRunner().invoke(app, ["presets", "show", "performance", "--raw"])
 
     assert result.exit_code == 0
-    assert '"name": "scaling"' in result.output
+    assert '"name": "performance"' in result.output
     assert '"include_azure": true' in result.output
