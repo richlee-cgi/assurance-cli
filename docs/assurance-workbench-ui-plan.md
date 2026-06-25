@@ -155,40 +155,40 @@ Goal: add local repository evidence as an optional evidence-pack source, with Gi
 
 CLI prerequisites:
 
-- [ ] Add `assurance code repos`.
-- [ ] Add `assurance code search`.
+- [x] Add `assurance code repos`.
+- [x] Add `assurance code search`.
 - [ ] Add `assurance code pr` for supplied GitHub PR URLs.
-- [ ] Add local repo discovery under configured roots.
-- [ ] Add bounded local content search.
+- [x] Add local repo discovery under configured roots.
+- [x] Add bounded local content search.
 - [ ] Add bounded commit/log evidence.
 - [ ] Add read-only `gh` PR metadata retrieval.
 - [ ] Add opt-in bounded diff retrieval.
-- [ ] Add redaction and truncation markers for code snippets and diffs.
-- [ ] Add `--include-code` to `assurance report evidence-pack`.
-- [ ] Add `--repo-root`, `--repo`, `--repo-file`.
+- [x] Add redaction and truncation markers for code snippets.
+- [x] Add `--include-code` to `assurance report evidence-pack`.
+- [x] Add `--repo-root`, `--repo`, `--repo-file`.
 - [ ] Add `--include-prs`, `--include-diffs`, `--github-fallback`.
-- [ ] Add Code Evidence section to combined evidence packs.
+- [x] Add Code Evidence section to combined evidence packs.
 
 UI work:
 
-- [ ] Add default repo roots in settings.
+- [x] Add default repo roots in settings.
 - [ ] Add repo discovery action.
-- [ ] Add repository subset checklist.
+- [x] Add repository subset field.
 - [ ] Add repository filter.
-- [ ] Add Code repositories source checkbox.
+- [x] Add Code repositories source checkbox.
 - [ ] Add Include PR metadata checkbox.
 - [ ] Add Include bounded diffs checkbox.
 - [ ] Add GitHub fallback checkbox.
-- [ ] Add code flags to command preview and run execution.
-- [ ] Preserve repo roots, selected repos and code options in `request.json`.
-- [ ] Show Code repositories in source coverage.
-- [ ] Add previous-run filter for Code repositories.
+- [x] Add code flags to command preview and run execution.
+- [x] Preserve repo roots and selected repos in `request.json`.
+- [x] Show Code repositories in source coverage.
+- [x] Add previous-run filter for Code repositories.
 - [ ] Display local/GitHub provider status and code evidence gaps.
 
 Acceptance:
 
-- [ ] User can select local repos for a run.
-- [ ] Evidence pack includes bounded local code evidence when requested.
+- [x] User can select local repos for a run.
+- [x] Evidence pack includes bounded local code evidence when requested.
 - [ ] GitHub PR evidence is opt-in and read-only.
 - [ ] Missing repos, missing `gh` auth and truncated diffs are visible as gaps.
 
