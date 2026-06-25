@@ -273,6 +273,84 @@ def _dataverse_topic_evidence_markdown() -> tuple[str | None, str | None]:
     return markdown, None if not warnings else "Dataverse evidence retrieval completed with warnings."
 
 
+def _confluence_parent_ids(values: list[str]) -> set[str]:
+    parent_ids: set[str] = set()
+    for value in values:
+        candidate = value.strip()
+        if not candidate:
+            continue
+        if "://" in candidate:
+            parsed = page_id_from_url(candidate)
+            if parsed:
+                parent_ids.add(parsed)
+            continue
+        parent_ids.add(candidate)
+    return parent_ids
+
+
+def _filter_confluence_results_by_parent(results: list[dict], excluded_parent_ids: set[str]) -> list[dict]:
+    if not excluded_parent_ids:
+        return results
+    filtered = []
+    for result in results:
+        ancestor_ids = {str(ancestor.get("id")) for ancestor in result.get("ancestors", []) if ancestor.get("id")}
+        if ancestor_ids.isdisjoint(excluded_parent_ids):
+            filtered.append(result)
+    return filtered
+
+
+def _fields_with_team_field(fields: str, team_field: str) -> str:
+    team_field = team_field.strip()
+    if not team_field or team_field.lower() == "team":
+        return fields
+    field_parts = [part.strip() for part in fields.split(",") if part.strip()]
+    if team_field not in field_parts:
+        field_parts.append(team_field)
+    return ",".join(field_parts)
+
+
+def _filter_jira_issues_by_team(issues: list[dict], team_field: str, excluded_teams: list[str]) -> list[dict]:
+    excluded = {team.strip().casefold() for team in excluded_teams if team.strip()}
+    if not excluded:
+        return issues
+    filtered = []
+    for issue in issues:
+        team_values = {_normalize_team_value(value).casefold() for value in _jira_team_values(issue, team_field)}
+        team_values.discard("")
+        if team_values.isdisjoint(excluded):
+            filtered.append(issue)
+    return filtered
+
+
+def _jira_team_values(issue: dict, team_field: str) -> list[object]:
+    fields = issue.get("fields", {})
+    candidates = [team_field]
+    if team_field.lower() != "team":
+        candidates.append("Team")
+    values = []
+    for candidate in candidates:
+        if candidate in fields:
+            value = fields.get(candidate)
+            if isinstance(value, list):
+                values.extend(value)
+            else:
+                values.append(value)
+    return values
+
+
+def _normalize_team_value(value: object) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, str):
+        return value
+    if isinstance(value, dict):
+        for key in ("name", "value", "title"):
+            if value.get(key):
+                return str(value[key])
+        return str(value)
+    return str(value)
+
+
 def _code_topic_evidence_markdown(
     *,
     topic: str,
@@ -1070,6 +1148,9 @@ def report_evidence_pack_cmd(
     max_page_chars: int = typer.Option(8000, "--max-page-chars"),
     include_comments: bool = typer.Option(False, "--include-comments"),
     comment_limit: int = typer.Option(10, "--comment-limit", min=1),
+    exclude_confluence_parent: list[str] = typer.Option([], "--exclude-confluence-parent", help="Confluence parent page ID or URL whose descendants should be excluded."),
+    jira_team_field: str = typer.Option("Team", "--jira-team-field", help="Jira field name or custom field ID used for team exclusions."),
+    exclude_jira_team: list[str] = typer.Option([], "--exclude-jira-team", help="Jira team name to exclude from evidence."),
     out: Optional[Path] = typer.Option(None, "--out"),
     cache_dir: Path = typer.Option(Path(".assurance-cache"), "--cache-dir"),
     no_cache: bool = typer.Option(False, "--no-cache"),
@@ -1097,6 +1178,9 @@ def report_evidence_pack_cmd(
     azure_body = None
     dataverse_body = None
     code_body = None
+    confluence_parent_ids = _confluence_parent_ids(exclude_confluence_parent)
+    excluded_confluence_results = 0
+    excluded_jira_issues = 0
 
     if not skip_confluence:
         selected_space = confluence_space or config.default_confluence_space
@@ -1109,6 +1193,13 @@ def report_evidence_pack_cmd(
             expand="space,history,version,ancestors",
             refresh=refresh,
         )
+        if confluence_parent_ids:
+            original_results = list(confluence_search_data.get("results", []))
+            filtered_results = _filter_confluence_results_by_parent(original_results, confluence_parent_ids)
+            excluded_confluence_results = len(original_results) - len(filtered_results)
+            confluence_search_data = {**confluence_search_data, "results": filtered_results}
+            if excluded_confluence_results:
+                gaps.append(f"Excluded {excluded_confluence_results} Confluence search result(s) under configured parent page exclusions.")
         confluence_pages = [
             _fetch_confluence_page(
                 config=config,
@@ -1148,20 +1239,21 @@ def report_evidence_pack_cmd(
             updated_before=None,
             order_by="updated DESC",
         )
+        jira_fields = _fields_with_team_field(DEFAULT_FIELDS, jira_team_field)
         jira_search_data = _fetch_jira_search(
             config=config,
             cache=cache,
             jql=jql,
-            fields=DEFAULT_FIELDS,
+            fields=jira_fields,
             limit=limit,
             refresh=refresh,
         )
-        issues = [
+        raw_issues = [
             _fetch_jira_issue(
                 config=config,
                 cache=cache,
                 issue_key=str(item["key"]),
-                fields=DEFAULT_FIELDS,
+                fields=jira_fields,
                 include_comments=include_comments,
                 include_changelog=False,
                 refresh=refresh,
@@ -1169,6 +1261,12 @@ def report_evidence_pack_cmd(
             for item in jira_search_data.get("issues", [])
             if item.get("key")
         ]
+        issues = _filter_jira_issues_by_team(raw_issues, jira_team_field, exclude_jira_team)
+        excluded_jira_issues = len(raw_issues) - len(issues)
+        if excluded_jira_issues:
+            gaps.append(f"Excluded {excluded_jira_issues} Jira issue(s) assigned to configured excluded teams.")
+        if exclude_jira_team:
+            jira_search_data = {**jira_search_data, "issues": [item for item in jira_search_data.get("issues", []) if str(item.get("key")) in {str(issue.get("key")) for issue in issues}]}
         if not issues:
             gaps.append("Jira search returned no issues for the topic.")
         jira_body = jira_evidence_pack_markdown(
@@ -1223,6 +1321,13 @@ def report_evidence_pack_cmd(
         dataverse_requested=include_dataverse,
         code_requested=include_code,
         gaps=gaps,
+        exclusions={
+            "confluence_parent_ids": sorted(confluence_parent_ids),
+            "jira_team_field": jira_team_field,
+            "jira_teams": list(exclude_jira_team),
+            "excluded_confluence_results": excluded_confluence_results,
+            "excluded_jira_issues": excluded_jira_issues,
+        },
     )
     _emit(body, raw=False, out=out)
 

@@ -152,6 +152,68 @@ def test_report_evidence_pack_with_preset_uses_mocked_sources(monkeypatch, tmp_p
     assert "Microsoft.Web/sites" in text
 
 
+def test_report_evidence_pack_applies_configured_exclusions(monkeypatch, tmp_path: Path) -> None:
+    _set_atlassian_env(monkeypatch)
+
+    monkeypatch.setattr(
+        "assurance_cli.main._fetch_confluence_search",
+        lambda **kwargs: {
+            "cql": kwargs["cql"],
+            "results": [
+                {"id": "123", "title": "Product architecture", "ancestors": []},
+                {"id": "456", "title": "Assurance notes", "ancestors": [{"id": "983238177"}]},
+            ],
+        },
+    )
+    monkeypatch.setattr("assurance_cli.main._fetch_confluence_page", lambda **kwargs: {"page": _confluence_page_payload(kwargs["page_id"])})
+    monkeypatch.setattr(
+        "assurance_cli.main._fetch_jira_search",
+        lambda **kwargs: {"jql": kwargs["jql"], "issues": [{"key": "ABC-123"}, {"key": "ABC-456"}]},
+    )
+
+    def fake_fetch_issue(**kwargs):
+        issue = _jira_issue_payload(kwargs["issue_key"])
+        if kwargs["issue_key"] == "ABC-456":
+            issue["fields"]["customfield_12345"] = {"value": "DSP Assurance"}
+            issue["fields"]["summary"] = "Assurance process ticket"
+        else:
+            issue["fields"]["customfield_12345"] = {"value": "Product Team"}
+        return issue
+
+    monkeypatch.setattr("assurance_cli.main._fetch_jira_issue", fake_fetch_issue)
+    output = tmp_path / "pack.md"
+
+    result = CliRunner().invoke(
+        app,
+        [
+            "report",
+            "evidence-pack",
+            "booking",
+            "--confluence-space",
+            "SPACE",
+            "--jira-project",
+            "ABC",
+            "--exclude-confluence-parent",
+            "983238177",
+            "--jira-team-field",
+            "customfield_12345",
+            "--exclude-jira-team",
+            "DSP Assurance",
+            "--out",
+            str(output),
+        ],
+    )
+
+    text = output.read_text(encoding="utf-8")
+    assert result.exit_code == 0
+    assert "Excluded Confluence results: `1`" in text
+    assert "Excluded Jira issues: `1`" in text
+    assert "Confluence parent exclusions: `983238177`" in text
+    assert "Jira team exclusions: `DSP Assurance`" in text
+    assert "ABC-123" in text
+    assert "ABC-456" not in text
+
+
 def test_code_repos_and_search_cli(tmp_path: Path) -> None:
     repo = tmp_path / "booking-service"
     repo.mkdir()

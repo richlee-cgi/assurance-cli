@@ -263,6 +263,16 @@ Dataverse snapshots call several `pac` commands and may take around a minute dep
 
 Code evidence is local-first. GitHub PR lookup is opt-in through `--include-prs`; bounded diffs require `--include-diffs`.
 
+Use exclusion flags to remove known governance or assurance areas from product evidence while keeping the scope visible in the evidence pack:
+
+```bash
+assurance report evidence-pack "Reservations API" \
+  --exclude-confluence-parent 983238177 \
+  --jira-team-field customfield_12345 \
+  --exclude-jira-team "DSP Assurance" \
+  --out evidence/reservations-api-pack.md
+```
+
 ## Cache
 
 Raw responses are cached under `.assurance-cache/` by default, with sensitive-looking fields redacted before writing.

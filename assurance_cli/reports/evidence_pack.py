@@ -78,6 +78,7 @@ def combined_evidence_pack_markdown(
     dataverse_requested: bool,
     code_requested: bool,
     gaps: list[str],
+    exclusions: dict[str, Any] | None = None,
 ) -> str:
     body = document_header(
         f"Evidence Pack: {topic}",
@@ -93,6 +94,9 @@ def combined_evidence_pack_markdown(
     body += f"- Azure: `{'yes' if azure_markdown is not None else ('requested, no evidence returned' if azure_requested else 'no')}`\n"
     body += f"- Dataverse: `{'yes' if dataverse_markdown is not None else ('requested, no evidence returned' if dataverse_requested else 'no')}`\n"
     body += f"- Code: `{'yes' if code_markdown is not None else ('requested, no evidence returned' if code_requested else 'no')}`\n\n"
+    body += "## Search Exclusions\n\n"
+    body += search_exclusions_markdown(exclusions)
+    body += "\n"
     body += "## Confluence Evidence\n\n"
     body += _strip_embedded_header(confluence_markdown) if confluence_markdown else "_Not queried._\n"
     body += "\n## Jira Evidence\n\n"
@@ -115,6 +119,27 @@ def combined_evidence_pack_markdown(
     body += "- `assurance dataverse snapshot`\n" if dataverse_markdown is not None else ""
     body += "- `assurance code search ...`\n" if code_markdown is not None else ""
     return body
+
+
+def search_exclusions_markdown(exclusions: dict[str, Any] | None) -> str:
+    if not exclusions:
+        return "_No search exclusions applied._\n"
+    confluence_parents = exclusions.get("confluence_parent_ids") or []
+    jira_teams = exclusions.get("jira_teams") or []
+    jira_team_field = exclusions.get("jira_team_field") or ""
+    excluded_confluence = int(exclusions.get("excluded_confluence_results") or 0)
+    excluded_jira = int(exclusions.get("excluded_jira_issues") or 0)
+    if not confluence_parents and not jira_teams and excluded_confluence == 0 and excluded_jira == 0:
+        return "_No search exclusions applied._\n"
+    lines = []
+    if confluence_parents:
+        lines.append("- Confluence parent exclusions: " + ", ".join(f"`{parent}`" for parent in confluence_parents))
+    if jira_teams:
+        lines.append("- Jira team exclusions: " + ", ".join(f"`{team}`" for team in jira_teams))
+        lines.append(f"- Jira team field: `{jira_team_field or 'Team'}`")
+    lines.append(f"- Excluded Confluence results: `{excluded_confluence}`")
+    lines.append(f"- Excluded Jira issues: `{excluded_jira}`")
+    return "\n".join(lines) + "\n"
 
 
 def jira_status_summary(issues: list[dict[str, Any]]) -> str:

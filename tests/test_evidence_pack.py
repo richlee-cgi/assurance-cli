@@ -90,6 +90,35 @@ def test_combined_evidence_pack_markdown_gaps() -> None:
     assert "`yes`" in markdown
 
 
+def test_combined_evidence_pack_markdown_exclusions() -> None:
+    markdown = combined_evidence_pack_markdown(
+        topic="booking",
+        confluence_markdown=None,
+        jira_markdown=None,
+        azure_markdown=None,
+        dataverse_markdown=None,
+        code_markdown=None,
+        azure_requested=False,
+        dataverse_requested=False,
+        code_requested=False,
+        gaps=[],
+        exclusions={
+            "confluence_parent_ids": ["983238177"],
+            "jira_team_field": "customfield_12345",
+            "jira_teams": ["DSP Assurance"],
+            "excluded_confluence_results": 2,
+            "excluded_jira_issues": 1,
+        },
+    )
+
+    assert "## Search Exclusions" in markdown
+    assert "Confluence parent exclusions: `983238177`" in markdown
+    assert "Jira team exclusions: `DSP Assurance`" in markdown
+    assert "Jira team field: `customfield_12345`" in markdown
+    assert "Excluded Confluence results: `2`" in markdown
+    assert "Excluded Jira issues: `1`" in markdown
+
+
 def test_combined_evidence_pack_markdown_requested_but_empty() -> None:
     markdown = combined_evidence_pack_markdown(
         topic="booking",
