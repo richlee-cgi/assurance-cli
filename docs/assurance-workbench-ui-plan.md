@@ -201,6 +201,10 @@ Goal: add explainable non-GenAI signals from retrieved evidence content.
 
 Design: [assurance-evidence-signals-spec.md](assurance-evidence-signals-spec.md).
 
+Implementation order:
+
+### Phase 8A - Ruleset Files And Parser
+
 - [ ] Add built-in Markdown ruleset files:
   - [ ] Architecture.
   - [ ] Delivery.
@@ -208,7 +212,7 @@ Design: [assurance-evidence-signals-spec.md](assurance-evidence-signals-spec.md)
   - [ ] Security and privacy.
   - [ ] Testing and quality.
   - [ ] Risk.
-- [ ] Define supported ruleset Markdown format:
+- [ ] Define and implement supported ruleset Markdown format:
   - [ ] YAML front matter metadata.
   - [ ] Required any terms.
   - [ ] Required all terms.
@@ -216,11 +220,20 @@ Design: [assurance-evidence-signals-spec.md](assurance-evidence-signals-spec.md)
   - [ ] Negative terms.
   - [ ] Applies-to presets.
   - [ ] Applies-to sources.
+- [ ] Add parser tests for valid and invalid rulesets.
+- [ ] Add validation warnings for unsupported ruleset syntax.
+
+### Phase 8B - Evidence Section Parser And Matcher
+
 - [ ] Parse `evidence-pack.md` into Markdown sections.
 - [ ] Implement term matching:
   - [ ] Case-insensitive words and phrases.
   - [ ] Per-section match counts.
   - [ ] Matched and missing term reporting.
+- [ ] Add tests for heading parsing, phrase matching and missing-term reporting.
+
+### Phase 8C - Built-In Signal Generation
+
 - [ ] Implement initial content signal rules:
   - [ ] Delivery risk markers.
   - [ ] Operational readiness term gaps.
@@ -230,13 +243,30 @@ Design: [assurance-evidence-signals-spec.md](assurance-evidence-signals-spec.md)
   - [ ] Known risk terms without mitigation/owner/decision markers.
 - [ ] Write `analysis.json`.
 - [ ] Write `analysis.md`.
+- [ ] Add tests for representative evidence packs and generated signal JSON.
+
+### Phase 8D - Run Integration
+
+- [ ] Run evidence-signal generation after a successful evidence-pack run.
+- [ ] Preserve signal generation warnings without failing the evidence run.
+- [ ] Load existing `analysis.json` and `analysis.md` for previous runs.
+- [ ] Add a manual regenerate action if analysis files are missing or stale.
+
+### Phase 8E - Result View
+
 - [ ] Display Assurance Signals in the result view:
   - [ ] Group by high, medium and info.
   - [ ] Show rule ID and ruleset.
   - [ ] Show matched or missing terms.
   - [ ] Show follow-up question.
-- [ ] Add validation warnings for unsupported ruleset syntax.
-- [ ] Add tests for ruleset parsing, matching and signal rendering.
+- [ ] Add route/rendering tests for signal groups and empty-state behaviour.
+
+### Phase 8F - User-Tunable Rules
+
+- [ ] Add settings value for optional local ruleset override directory.
+- [ ] Show active built-in and override ruleset paths in the Guide or Settings page.
+- [ ] Load override rulesets after built-ins.
+- [ ] Ensure local override files are never written to Git-managed locations automatically.
 
 Acceptance:
 

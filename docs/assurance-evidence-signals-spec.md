@@ -301,29 +301,47 @@ Use careful language:
 
 ## Implementation Phases
 
-### Phase A - Built-In Signals
+### Phase A - Ruleset Files And Parser
 
 - Add built-in Markdown rulesets.
-- Parse evidence pack sections.
-- Implement term presence/absence rules.
-- Write `analysis.json` and `analysis.md`.
-- Render signals in the UI result page.
+- Implement the supported Markdown/front-matter parser.
+- Validate unsupported sections without guessing.
+- Add parser tests before signal rules.
 
-### Phase B - User-Tunable Rules
+### Phase B - Evidence Section Parser And Matcher
+
+- Parse `evidence-pack.md` into sections.
+- Implement case-insensitive word and phrase matching.
+- Report matched and missing terms per section.
+
+### Phase C - Built-In Signal Generation
+
+- Implement the first content-signal rules over parsed sections.
+- Write `analysis.json`.
+- Write `analysis.md`.
+- Keep signal-generation warnings separate from evidence-run failures.
+
+### Phase D - UI Integration
+
+- Generate signals after successful evidence-pack runs.
+- Load existing signal files for previous runs.
+- Render the Assurance Signals panel in the result view.
+- Add a manual regenerate action if analysis files are missing or stale.
+
+### Phase E - User-Tunable Rules
 
 - Add settings value for ruleset override directory.
 - Load local Markdown rulesets after built-ins.
-- Show active ruleset file paths in the UI.
+- Show active rule file paths in the UI.
 - Add validation warnings for unsupported rule syntax.
 
-### Phase C - Structured Source Enhancements
+### Phase F - Structured Source Enhancements
 
 - Add optional structured source summaries from `assurance-cli`.
 - Improve Jira status/priority/date signals without scraping Markdown tables.
 - Improve Confluence freshness signals.
 - Improve code/PR signals.
 
-### Phase D - Optional Local LLM
+### Phase G - Optional Local LLM
 
 Only after deterministic signals are useful, consider local LLM commentary over the signals and evidence. Any LLM output must be clearly marked as draft/unverified and must not replace deterministic signals.
-
