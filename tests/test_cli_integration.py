@@ -9,7 +9,7 @@ from typer.testing import CliRunner
 from assurance_cli.azure.cli import AzureCommandResult
 from assurance_cli.dataverse.pac import PacCommandResult
 from assurance_cli.exceptions import AssuranceError
-from assurance_cli.main import app
+from assurance_cli.main import _fields_with_team_field, app
 
 
 def _set_atlassian_env(monkeypatch) -> None:
@@ -18,6 +18,10 @@ def _set_atlassian_env(monkeypatch) -> None:
     monkeypatch.setenv("ATLASSIAN_API_TOKEN", "token")
     monkeypatch.setenv("ATLASSIAN_DEFAULT_CONFLUENCE_SPACE", "SPACE")
     monkeypatch.setenv("ATLASSIAN_DEFAULT_JIRA_PROJECT", "ABC")
+
+
+def test_fields_with_team_field_adds_default_team_field() -> None:
+    assert _fields_with_team_field("summary,status", "Team") == "summary,status,Team"
 
 
 def _confluence_search_payload() -> dict[str, Any]:

@@ -301,7 +301,7 @@ def _filter_confluence_results_by_parent(results: list[dict], excluded_parent_id
 
 def _fields_with_team_field(fields: str, team_field: str) -> str:
     team_field = team_field.strip()
-    if not team_field or team_field.lower() == "team":
+    if not team_field:
         return fields
     field_parts = [part.strip() for part in fields.split(",") if part.strip()]
     if team_field not in field_parts:
