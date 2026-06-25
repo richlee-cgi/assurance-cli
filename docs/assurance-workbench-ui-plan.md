@@ -172,25 +172,25 @@ CLI prerequisites:
 UI work:
 
 - [x] Add default repo roots in settings.
-- [ ] Add repo discovery action.
+- [x] Add repo discovery action.
 - [x] Add repository subset field.
 - [ ] Add repository filter.
 - [x] Add Code repositories source checkbox.
-- [ ] Add Include PR metadata checkbox.
-- [ ] Add Include bounded diffs checkbox.
-- [ ] Add GitHub fallback checkbox.
+- [x] Add Include PR metadata checkbox.
+- [x] Add Include bounded diffs checkbox.
+- [x] Add GitHub fallback checkbox.
 - [x] Add code flags to command preview and run execution.
 - [x] Preserve repo roots and selected repos in `request.json`.
 - [x] Show Code repositories in source coverage.
 - [x] Add previous-run filter for Code repositories.
-- [ ] Display local/GitHub provider status and code evidence gaps.
+- [x] Display local/GitHub provider status and code evidence gaps.
 
 Acceptance:
 
 - [x] User can select local repos for a run.
 - [x] Evidence pack includes bounded local code evidence when requested.
 - [x] GitHub PR evidence is opt-in and read-only.
-- [ ] Missing repos, missing `gh` auth and truncated diffs are visible as gaps.
+- [x] Missing repos, missing `gh` auth and truncated diffs are visible as gaps.
 
 ## Phase 8 - Deterministic Analysis
 
