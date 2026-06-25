@@ -195,39 +195,55 @@ Acceptance:
 - [x] GitHub PR evidence is opt-in and read-only.
 - [x] Missing repos, missing `gh` auth and truncated diffs are visible as gaps.
 
-## Phase 8 - Deterministic Analysis
+## Phase 8 - Evidence Signals
 
-Goal: add explainable non-GenAI analysis.
+Goal: add explainable non-GenAI signals from retrieved evidence content.
 
-- [ ] Define analysis rule schema.
-- [ ] Implement evidence coverage rules:
-  - [ ] Confluence missing.
-  - [ ] Jira missing.
-  - [ ] Azure missing when requested.
-  - [ ] Dataverse missing when requested.
-  - [ ] Code evidence missing when requested.
-- [ ] Implement freshness checks.
-- [ ] Implement Azure risk flags:
-  - [ ] Function settings unavailable.
-  - [ ] Public network access appears enabled.
-  - [ ] Managed identity appears missing.
-- [ ] Implement Jira risk flags:
-  - [ ] No issues found.
-  - [ ] Stale open issues.
-  - [ ] High priority issues present.
-- [ ] Implement code risk flags:
-  - [ ] Selected repository missing.
-  - [ ] Dirty working tree.
-  - [ ] GitHub PR link unresolved.
-  - [ ] Diff evidence truncated.
+Design: [assurance-evidence-signals-spec.md](assurance-evidence-signals-spec.md).
+
+- [ ] Add built-in Markdown ruleset files:
+  - [ ] Architecture.
+  - [ ] Delivery.
+  - [ ] Operations.
+  - [ ] Security and privacy.
+  - [ ] Testing and quality.
+  - [ ] Risk.
+- [ ] Define supported ruleset Markdown format:
+  - [ ] YAML front matter metadata.
+  - [ ] Required any terms.
+  - [ ] Required all terms.
+  - [ ] Positive terms.
+  - [ ] Negative terms.
+  - [ ] Applies-to presets.
+  - [ ] Applies-to sources.
+- [ ] Parse `evidence-pack.md` into Markdown sections.
+- [ ] Implement term matching:
+  - [ ] Case-insensitive words and phrases.
+  - [ ] Per-section match counts.
+  - [ ] Matched and missing term reporting.
+- [ ] Implement initial content signal rules:
+  - [ ] Delivery risk markers.
+  - [ ] Operational readiness term gaps.
+  - [ ] Architecture decision/trade-off term gaps.
+  - [ ] Security/privacy review markers.
+  - [ ] Testing/quality term gaps.
+  - [ ] Known risk terms without mitigation/owner/decision markers.
 - [ ] Write `analysis.json`.
 - [ ] Write `analysis.md`.
-- [ ] Display analysis in results view.
+- [ ] Display Assurance Signals in the result view:
+  - [ ] Group by high, medium and info.
+  - [ ] Show rule ID and ruleset.
+  - [ ] Show matched or missing terms.
+  - [ ] Show follow-up question.
+- [ ] Add validation warnings for unsupported ruleset syntax.
+- [ ] Add tests for ruleset parsing, matching and signal rendering.
 
 Acceptance:
 
-- [ ] UI produces repeatable, explainable findings without GenAI.
-- [ ] Each finding has rule ID, severity, source, explanation and follow-up question.
+- [ ] UI produces repeatable, explainable signals without GenAI.
+- [ ] Signals are grounded in retrieved evidence content, not tool-performance assumptions.
+- [ ] Each signal has rule ID, ruleset, severity, source/section, explanation, evidence terms and follow-up question.
+- [ ] Users can read the Markdown rulesets and understand why a signal was raised.
 
 ## Phase 9 - Polish And Packaging
 

@@ -301,77 +301,67 @@ Initial UI behavior should not call `gh` directly. It should pass structured opt
 
 ## Deterministic Analysis
 
-The first version should provide non-GenAI analysis only.
+The first version should provide non-GenAI evidence signals only.
 
-Analysis should be transparent, rule-based and repeatable.
+Detailed design lives in [assurance-evidence-signals-spec.md](assurance-evidence-signals-spec.md).
 
-Potential checks:
+Signals should be transparent, rule-based, repeatable and grounded in retrieved evidence content. They should help reviewers notice patterns, not make assurance conclusions.
 
-### Evidence Coverage
+The first useful implementation should:
 
-- Confluence evidence present.
-- Jira evidence present.
-- Azure evidence present when requested.
-- Dataverse evidence present when requested.
-- Code repository evidence present when requested.
-- Evidence pack contains a gaps section.
-- Commands completed without warnings.
+- Parse `evidence-pack.md` by Markdown section.
+- Run built-in Markdown rulesets over the evidence content.
+- Look for presence and absence of important assurance terms.
+- Write `analysis.json` and `analysis.md` into the run folder.
+- Render an Assurance Signals panel in the result page.
+- Keep language careful and evidence-scoped.
 
-### Freshness
+Initial signal themes:
 
-- Confluence pages older than a configured threshold.
-- Jira issues not updated recently.
-- Evidence run older than a configured threshold.
+- Delivery risk markers: blockers, incidents, defects, delays, workarounds and unresolved issues.
+- Operational readiness gaps: no monitoring, alerting, rollback, runbook or support terms found.
+- Architecture confidence markers: decision, ADR, trade-off, integration, dependency and failure-mode evidence.
+- Security and privacy review markers: personal data, permissions, credentials, encryption and audit terms.
+- Testing and quality evidence: test, UAT, regression, performance/load test and acceptance criteria terms.
+- Risk evidence: known-bad terms and missing mitigation/owner/decision language.
 
-### Azure Risk Flags
+Built-in rulesets should be stored as editable Markdown files in the UI repo. Later, users should be able to provide local override rulesets from the Workbench.
 
-- Public network access appears enabled.
-- Function app settings could not be retrieved.
-- Managed identity appears missing.
-- Role assignments evidence missing when Azure was requested.
-- Resource group snapshot missing.
+Example signal language:
 
-### Jira Risk Flags
+```text
+No operational readiness terms were found in the retrieved evidence.
+Review whether monitoring, alerting, rollback and runbook evidence exists elsewhere.
+```
 
-- No Jira issues found.
-- Many unresolved issues.
-- High-priority issues present.
-- Stale open issues.
-- Missing assignee.
+Avoid stronger claims such as:
 
-### Documentation Risk Flags
+```text
+There is no operational readiness evidence.
+```
 
-- No architecture page found.
-- No operational readiness evidence found.
-- No security evidence found.
-- Confluence content was truncated.
-
-### Code Risk Flags
-
-- Code evidence missing when requested.
-- Selected repository was not found locally.
-- Repository working tree was dirty.
-- GitHub PR link could not be resolved.
-- Diff evidence was truncated.
-- No code matches found for the topic.
-
-Each analysis finding should include:
+Each signal should include:
 
 - Rule ID.
-- Severity: `info`, `warning`, `concern`.
-- Evidence source.
+- Ruleset name.
+- Severity: `info`, `medium`, `high`.
+- Evidence source or section.
+- Title.
 - Explanation.
+- Matched or missing terms where relevant.
 - Suggested follow-up question.
 
 Example:
 
 ```json
 {
-  "rule_id": "azure.function_settings_unavailable",
-  "severity": "warning",
-  "source": "Azure",
-  "explanation": "Function app settings could not be retrieved for one or more apps.",
-  "question": "Does the team have permission to verify app settings and secret references?"
+  "rule_id": "operations.readiness_terms_missing",
+  "ruleset": "operations",
+  "severity": "medium",
+  "source": "Evidence pack",
+  "title": "Operational readiness terms were not found",
+  "explanation": "The retrieved evidence did not contain monitoring, alerting, rollback or runbook terms.",
+  "question": "Ask the team where operational readiness evidence is recorded."
 }
 ```
 
