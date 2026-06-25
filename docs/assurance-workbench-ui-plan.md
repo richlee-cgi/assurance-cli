@@ -12,6 +12,7 @@ The CLI remains standalone. The UI invokes the CLI and persists evidence into th
 - [x] Use the Workbench filesystem as persistence.
 - [x] Start with HTMX rather than React/Vite.
 - [x] Decide whether UI lives in this repo initially or a sibling repo.
+- [ ] Confirm code evidence source design in [assurance-code-evidence-spec.md](assurance-code-evidence-spec.md).
 - [ ] Decide default Workbench evidence root on the target machine.
 
 ## Phase 1 - Minimal Local Web App
@@ -148,7 +149,50 @@ Acceptance:
 - [ ] User can find and reopen previous evidence runs.
 - [ ] User can re-run a previous request.
 
-## Phase 7 - Deterministic Analysis
+## Phase 7 - Code Repository Evidence
+
+Goal: add local repository evidence as an optional evidence-pack source, with GitHub/PR retrieval as an explicit fallback.
+
+CLI prerequisites:
+
+- [ ] Add `assurance code repos`.
+- [ ] Add `assurance code search`.
+- [ ] Add `assurance code pr` for supplied GitHub PR URLs.
+- [ ] Add local repo discovery under configured roots.
+- [ ] Add bounded local content search.
+- [ ] Add bounded commit/log evidence.
+- [ ] Add read-only `gh` PR metadata retrieval.
+- [ ] Add opt-in bounded diff retrieval.
+- [ ] Add redaction and truncation markers for code snippets and diffs.
+- [ ] Add `--include-code` to `assurance report evidence-pack`.
+- [ ] Add `--repo-root`, `--repo`, `--repo-file`.
+- [ ] Add `--include-prs`, `--include-diffs`, `--github-fallback`.
+- [ ] Add Code Evidence section to combined evidence packs.
+
+UI work:
+
+- [ ] Add default repo roots in settings.
+- [ ] Add repo discovery action.
+- [ ] Add repository subset checklist.
+- [ ] Add repository filter.
+- [ ] Add Code repositories source checkbox.
+- [ ] Add Include PR metadata checkbox.
+- [ ] Add Include bounded diffs checkbox.
+- [ ] Add GitHub fallback checkbox.
+- [ ] Add code flags to command preview and run execution.
+- [ ] Preserve repo roots, selected repos and code options in `request.json`.
+- [ ] Show Code repositories in source coverage.
+- [ ] Add previous-run filter for Code repositories.
+- [ ] Display local/GitHub provider status and code evidence gaps.
+
+Acceptance:
+
+- [ ] User can select local repos for a run.
+- [ ] Evidence pack includes bounded local code evidence when requested.
+- [ ] GitHub PR evidence is opt-in and read-only.
+- [ ] Missing repos, missing `gh` auth and truncated diffs are visible as gaps.
+
+## Phase 8 - Deterministic Analysis
 
 Goal: add explainable non-GenAI analysis.
 
@@ -158,6 +202,7 @@ Goal: add explainable non-GenAI analysis.
   - [ ] Jira missing.
   - [ ] Azure missing when requested.
   - [ ] Dataverse missing when requested.
+  - [ ] Code evidence missing when requested.
 - [ ] Implement freshness checks.
 - [ ] Implement Azure risk flags:
   - [ ] Function settings unavailable.
@@ -167,6 +212,11 @@ Goal: add explainable non-GenAI analysis.
   - [ ] No issues found.
   - [ ] Stale open issues.
   - [ ] High priority issues present.
+- [ ] Implement code risk flags:
+  - [ ] Selected repository missing.
+  - [ ] Dirty working tree.
+  - [ ] GitHub PR link unresolved.
+  - [ ] Diff evidence truncated.
 - [ ] Write `analysis.json`.
 - [ ] Write `analysis.md`.
 - [ ] Display analysis in results view.
@@ -176,7 +226,7 @@ Acceptance:
 - [ ] UI produces repeatable, explainable findings without GenAI.
 - [ ] Each finding has rule ID, severity, source, explanation and follow-up question.
 
-## Phase 8 - Polish And Packaging
+## Phase 9 - Polish And Packaging
 
 Goal: make the local UI easy to run and maintain.
 

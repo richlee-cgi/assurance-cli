@@ -73,13 +73,15 @@ def combined_evidence_pack_markdown(
     jira_markdown: str | None,
     azure_markdown: str | None,
     dataverse_markdown: str | None,
+    code_markdown: str | None,
     azure_requested: bool,
     dataverse_requested: bool,
+    code_requested: bool,
     gaps: list[str],
 ) -> str:
     body = document_header(
         f"Evidence Pack: {topic}",
-        "Confluence/Jira/Azure/Dataverse",
+        "Confluence/Jira/Azure/Dataverse/Code",
         "assurance report evidence-pack",
         topic,
     )
@@ -89,7 +91,8 @@ def combined_evidence_pack_markdown(
     body += f"- Confluence: `{'yes' if confluence_markdown is not None else 'no'}`\n"
     body += f"- Jira: `{'yes' if jira_markdown is not None else 'no'}`\n"
     body += f"- Azure: `{'yes' if azure_markdown is not None else ('requested, no evidence returned' if azure_requested else 'no')}`\n"
-    body += f"- Dataverse: `{'yes' if dataverse_markdown is not None else ('requested, no evidence returned' if dataverse_requested else 'no')}`\n\n"
+    body += f"- Dataverse: `{'yes' if dataverse_markdown is not None else ('requested, no evidence returned' if dataverse_requested else 'no')}`\n"
+    body += f"- Code: `{'yes' if code_markdown is not None else ('requested, no evidence returned' if code_requested else 'no')}`\n\n"
     body += "## Confluence Evidence\n\n"
     body += _strip_embedded_header(confluence_markdown) if confluence_markdown else "_Not queried._\n"
     body += "\n## Jira Evidence\n\n"
@@ -98,6 +101,8 @@ def combined_evidence_pack_markdown(
     body += _strip_embedded_header(azure_markdown) if azure_markdown else ("_No Azure evidence returned._\n" if azure_requested else "_Not requested._\n")
     body += "\n## Dataverse Evidence\n\n"
     body += _strip_embedded_header(dataverse_markdown) if dataverse_markdown else ("_No Dataverse evidence returned._\n" if dataverse_requested else "_Not requested._\n")
+    body += "\n## Code Evidence\n\n"
+    body += _strip_embedded_header(code_markdown) if code_markdown else ("_No code evidence returned._\n" if code_requested else "_Not requested._\n")
     body += "\n## Gaps / Follow-up Questions\n\n"
     if gaps:
         body += "\n".join(f"- {gap}" for gap in gaps) + "\n"
@@ -108,6 +113,7 @@ def combined_evidence_pack_markdown(
     body += "- `assurance jira evidence-pack ...`\n" if jira_markdown is not None else ""
     body += "- `assurance azure resource-search ...`\n" if azure_markdown is not None else ""
     body += "- `assurance dataverse snapshot`\n" if dataverse_markdown is not None else ""
+    body += "- `assurance code search ...`\n" if code_markdown is not None else ""
     return body
 
 

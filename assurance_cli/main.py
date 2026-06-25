@@ -24,6 +24,8 @@ from assurance_cli.azure.markdown import (
     function_apps_markdown,
 )
 from assurance_cli.cache import Cache
+from assurance_cli.code.local import discover_repositories, repo_selectors_from_file, search_repositories, select_repositories
+from assurance_cli.code.markdown import code_search_markdown, repositories_markdown
 from assurance_cli.config import load_config
 from assurance_cli.dataverse.markdown import (
     dataverse_check_markdown,
@@ -46,6 +48,7 @@ confluence_app = typer.Typer(help="Read-only Confluence retrieval.")
 jira_app = typer.Typer(help="Read-only Jira retrieval.")
 azure_app = typer.Typer(help="Read-only Azure CLI wrappers.")
 dataverse_app = typer.Typer(help="Read-only Dataverse / Power Platform CLI wrappers.")
+code_app = typer.Typer(help="Read-only local repository evidence.")
 cache_app = typer.Typer(help="Inspect local assurance cache.")
 report_app = typer.Typer(help="Compose multi-system evidence reports.")
 presets_app = typer.Typer(help="List built-in evidence query presets.")
@@ -54,6 +57,7 @@ app.add_typer(confluence_app, name="confluence")
 app.add_typer(jira_app, name="jira")
 app.add_typer(azure_app, name="azure")
 app.add_typer(dataverse_app, name="dataverse")
+app.add_typer(code_app, name="code")
 app.add_typer(cache_app, name="cache")
 app.add_typer(report_app, name="report")
 app.add_typer(presets_app, name="presets")
@@ -266,6 +270,27 @@ def _dataverse_topic_evidence_markdown() -> tuple[str | None, str | None]:
         command="assurance dataverse snapshot",
     )
     return markdown, None if not warnings else "Dataverse evidence retrieval completed with warnings."
+
+
+def _code_topic_evidence_markdown(
+    *,
+    topic: str,
+    repo_roots: list[Path],
+    repos: list[str],
+    repo_file: Path | None,
+    limit: int,
+    max_file_bytes: int,
+) -> tuple[str | None, list[str]]:
+    gaps: list[str] = []
+    if not repo_roots:
+        return None, ["Code evidence was requested but no --repo-root was supplied."]
+    discovered = discover_repositories(repo_roots)
+    selectors = [*repos, *repo_selectors_from_file(repo_file)]
+    selected, selection_gaps = select_repositories(discovered, selectors)
+    gaps.extend(selection_gaps)
+    result = search_repositories(topic, selected, limit=limit, max_file_bytes=max_file_bytes)
+    gaps.extend(result.gaps)
+    return code_search_markdown(result), gaps
 
 
 @confluence_app.command("search")
@@ -893,6 +918,90 @@ def dataverse_snapshot_cmd(
     _emit(body, raw=False, out=out)
 
 
+@code_app.command("repos")
+def code_repos_cmd(
+    repo_root: list[Path] = typer.Option([], "--repo-root", help="Directory containing local Git repositories."),
+    out: Optional[Path] = typer.Option(None, "--out"),
+    raw: bool = typer.Option(False, "--raw"),
+) -> None:
+    repositories = discover_repositories(repo_root)
+    if raw:
+        _emit(
+            {
+                "repositories": [
+                    {
+                        "name": repo.name,
+                        "path": str(repo.path),
+                        "branch": repo.branch,
+                        "dirty": repo.dirty,
+                        "status": repo.status,
+                    }
+                    for repo in repositories
+                ]
+            },
+            raw=True,
+            out=out,
+        )
+        return
+    body = repositories_markdown(repositories, roots=[str(root) for root in repo_root])
+    _emit(body, raw=False, out=out)
+
+
+@code_app.command("search")
+def code_search_cmd(
+    query: str = typer.Argument(...),
+    repo_root: list[Path] = typer.Option([], "--repo-root", help="Directory containing local Git repositories."),
+    repo: list[str] = typer.Option([], "--repo", help="Repository name or path to include."),
+    repo_file: Optional[Path] = typer.Option(None, "--repo-file", help="Newline-delimited repository selectors."),
+    limit: int = typer.Option(30, "--limit", min=1),
+    max_file_bytes: int = typer.Option(20_000, "--max-file-bytes", min=1),
+    out: Optional[Path] = typer.Option(None, "--out"),
+    raw: bool = typer.Option(False, "--raw"),
+) -> None:
+    repositories = discover_repositories(repo_root)
+    selectors = [*repo, *repo_selectors_from_file(repo_file)]
+    selected, gaps = select_repositories(repositories, selectors)
+    result = search_repositories(query, selected, limit=limit, max_file_bytes=max_file_bytes)
+    all_gaps = [*gaps, *result.gaps]
+    result = type(result)(
+        query=result.query,
+        repositories=result.repositories,
+        matches=result.matches,
+        gaps=all_gaps,
+        truncated=result.truncated,
+    )
+    if raw:
+        _emit(
+            {
+                "query": result.query,
+                "repositories": [
+                    {
+                        "name": item.name,
+                        "path": str(item.path),
+                        "branch": item.branch,
+                        "dirty": item.dirty,
+                    }
+                    for item in result.repositories
+                ],
+                "matches": [
+                    {
+                        "repo": match.repo.name,
+                        "file": str(match.file_path),
+                        "line_number": match.line_number,
+                        "line": match.line,
+                    }
+                    for match in result.matches
+                ],
+                "gaps": result.gaps,
+                "truncated": result.truncated,
+            },
+            raw=True,
+            out=out,
+        )
+        return
+    _emit(code_search_markdown(result), raw=False, out=out)
+
+
 @report_app.command("evidence-pack")
 def report_evidence_pack_cmd(
     topic: Optional[str] = typer.Argument(None),
@@ -903,7 +1012,12 @@ def report_evidence_pack_cmd(
     skip_jira: bool = typer.Option(False, "--skip-jira"),
     include_azure: bool = typer.Option(False, "--include-azure"),
     include_dataverse: bool = typer.Option(False, "--include-dataverse"),
+    include_code: bool = typer.Option(False, "--include-code"),
     azure_resource_group: Optional[str] = typer.Option(None, "--azure-resource-group"),
+    repo_root: list[Path] = typer.Option([], "--repo-root", help="Directory containing local Git repositories."),
+    repo: list[str] = typer.Option([], "--repo", help="Repository name or path to include."),
+    repo_file: Optional[Path] = typer.Option(None, "--repo-file", help="Newline-delimited repository selectors."),
+    max_file_bytes: int = typer.Option(20_000, "--max-file-bytes", min=1),
     limit: int = typer.Option(10, "--limit", min=1),
     max_page_chars: int = typer.Option(8000, "--max-page-chars"),
     include_comments: bool = typer.Option(False, "--include-comments"),
@@ -934,6 +1048,7 @@ def report_evidence_pack_cmd(
     jira_body = None
     azure_body = None
     dataverse_body = None
+    code_body = None
 
     if not skip_confluence:
         selected_space = confluence_space or config.default_confluence_space
@@ -1033,14 +1148,27 @@ def report_evidence_pack_cmd(
         if dataverse_gap:
             gaps.append(dataverse_gap)
 
+    if include_code:
+        code_body, code_gaps = _code_topic_evidence_markdown(
+            topic=topic,
+            repo_roots=repo_root,
+            repos=repo,
+            repo_file=repo_file,
+            limit=limit,
+            max_file_bytes=max_file_bytes,
+        )
+        gaps.extend(code_gaps)
+
     body = combined_evidence_pack_markdown(
         topic=topic,
         confluence_markdown=confluence_body,
         jira_markdown=jira_body,
         azure_markdown=azure_body,
         dataverse_markdown=dataverse_body,
+        code_markdown=code_body,
         azure_requested=include_azure,
         dataverse_requested=include_dataverse,
+        code_requested=include_code,
         gaps=gaps,
     )
     _emit(body, raw=False, out=out)

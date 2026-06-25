@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import subprocess
 from pathlib import Path
 from typing import Any
 
@@ -149,6 +150,57 @@ def test_report_evidence_pack_with_preset_uses_mocked_sources(monkeypatch, tmp_p
     assert "System architecture evidence" in text
     assert "Jira evidence." in text
     assert "Microsoft.Web/sites" in text
+
+
+def test_code_repos_and_search_cli(tmp_path: Path) -> None:
+    repo = tmp_path / "booking-service"
+    repo.mkdir()
+    (repo / "README.md").write_text("Booking allocation evidence.\n", encoding="utf-8")
+    subprocess_result = subprocess.run(["git", "init", str(repo)], capture_output=True, text=True)
+    assert subprocess_result.returncode == 0
+
+    repos_result = CliRunner().invoke(app, ["code", "repos", "--repo-root", str(tmp_path)])
+    search_result = CliRunner().invoke(app, ["code", "search", "Booking", "--repo-root", str(tmp_path), "--repo", "booking-service"])
+
+    assert repos_result.exit_code == 0
+    assert "booking-service" in repos_result.output
+    assert search_result.exit_code == 0
+    assert "Code Evidence" in search_result.output
+    assert "README.md" in search_result.output
+
+
+def test_report_evidence_pack_includes_code(monkeypatch, tmp_path: Path) -> None:
+    _set_atlassian_env(monkeypatch)
+    repo = tmp_path / "booking-service"
+    repo.mkdir()
+    (repo / "app.py").write_text("booking allocation implementation\n", encoding="utf-8")
+    subprocess_result = subprocess.run(["git", "init", str(repo)], capture_output=True, text=True)
+    assert subprocess_result.returncode == 0
+    output = tmp_path / "pack.md"
+
+    result = CliRunner().invoke(
+        app,
+        [
+            "report",
+            "evidence-pack",
+            "booking",
+            "--skip-confluence",
+            "--skip-jira",
+            "--include-code",
+            "--repo-root",
+            str(tmp_path),
+            "--repo",
+            "booking-service",
+            "--out",
+            str(output),
+        ],
+    )
+
+    text = output.read_text(encoding="utf-8")
+    assert result.exit_code == 0
+    assert "Code: `yes`" in text
+    assert "booking-service" in text
+    assert "app.py" in text
 
 
 def test_azure_resource_search_cli_uses_mocked_runner(monkeypatch) -> None:

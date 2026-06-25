@@ -1,6 +1,6 @@
 # assurance-cli
 
-Read-only Python CLI for gathering assurance evidence from Confluence, Jira, Azure, and Dataverse/Power Platform, with Markdown-first output.
+Read-only Python CLI for gathering assurance evidence from Confluence, Jira, Azure, Dataverse/Power Platform, and local code repositories, with Markdown-first output.
 
 Command groups:
 
@@ -24,6 +24,8 @@ Command groups:
 - `assurance dataverse connectors`
 - `assurance dataverse connections`
 - `assurance dataverse snapshot`
+- `assurance code repos`
+- `assurance code search`
 - `assurance presets list`
 - `assurance presets show`
 - `assurance cache list`
@@ -142,6 +144,8 @@ assurance azure snapshot --resource-group rg-example-dev --out evidence/azure-sn
 assurance dataverse check
 assurance dataverse environments
 assurance dataverse snapshot --out evidence/dataverse-snapshot.md
+assurance code repos --repo-root /Users/example/dev
+assurance code search "booking allocation" --repo-root /Users/example/dev --repo booking-service --out evidence/code.md
 ```
 
 Raw JSON can be emitted where useful:
@@ -212,9 +216,17 @@ assurance dataverse solutions --environment https://example.crm11.dynamics.com
 assurance dataverse connections --raw
 ```
 
+Code evidence commands inspect local Git repositories only. They do not fetch, pull, checkout, commit or push:
+
+```bash
+assurance code repos --repo-root /Users/example/dev
+assurance code search "booking allocation" --repo-root /Users/example/dev --repo booking-service --limit 30
+assurance code search "timeout" --repo-root /Users/example/dev --repo-file repos.txt --max-file-bytes 20000
+```
+
 ## Combined reports
 
-`assurance report evidence-pack` queries Confluence and Jira by default. Add `--include-azure` to run a bounded Azure Resource Graph search for the topic, and add `--include-dataverse` to include a Dataverse snapshot from the current `pac` profile.
+`assurance report evidence-pack` queries Confluence and Jira by default. Add `--include-azure` to run a bounded Azure Resource Graph search for the topic, add `--include-dataverse` to include a Dataverse snapshot from the current `pac` profile, and add `--include-code` to search selected local Git repositories.
 
 Built-in presets provide common assurance search topics and inclusion defaults:
 
@@ -233,11 +245,16 @@ assurance report evidence-pack "Reservations API" \
   --include-azure \
   --azure-resource-group rg-example-dev \
   --include-dataverse \
+  --include-code \
+  --repo-root /Users/example/dev \
+  --repo reservations-api \
   --limit 3 \
   --out evidence/reservations-api-pack.md
 ```
 
 Dataverse snapshots call several `pac` commands and may take around a minute depending on the environment.
+
+Code evidence is local-first. GitHub/PR lookup is specified for a later slice; see [docs/assurance-code-evidence-spec.md](docs/assurance-code-evidence-spec.md).
 
 ## Cache
 
@@ -260,6 +277,8 @@ The implemented commands use read-only retrieval only. Jira and Confluence searc
 Azure commands are wrapped through an allowlisted `az` runner. Mutating verbs such as `create`, `update`, `delete`, `set`, `restart`, `deploy`, `publish`, `import`, and `sync` are blocked.
 
 Dataverse commands are wrapped through an allowlisted `pac` runner. Mutating operations such as solution import/export/publish/sync and environment changes are blocked.
+
+Code commands use local read-only filesystem scanning and read-only `git` metadata commands. They do not run mutating Git commands.
 
 ## License
 

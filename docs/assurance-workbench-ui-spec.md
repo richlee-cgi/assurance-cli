@@ -23,7 +23,7 @@ The CLI remains the stable evidence engine. The UI is a convenience layer.
 
 - Do not replace the CLI.
 - Do not store credentials in the UI.
-- Do not create or mutate Confluence, Jira, Azure or Dataverse resources.
+- Do not create or mutate Confluence, Jira, Azure, Dataverse, local Git or GitHub resources.
 - Do not build a multi-user hosted service.
 - Do not introduce vector databases, embeddings or RAG.
 - Do not require an Ollama/local model dependency.
@@ -82,6 +82,7 @@ Workbench/
           evidence-pack.md
           stdout.log
           stderr.log
+          code-evidence.md
           analysis.json
           analysis.md
 ```
@@ -96,11 +97,17 @@ Workbench/
     "confluence": true,
     "jira": true,
     "azure": true,
-    "dataverse": false
+    "dataverse": false,
+    "code": true
   },
   "confluence_space": "SPACE",
   "jira_project": "PROJ",
   "azure_resource_group": "rg-example-dev",
+  "repo_roots": ["/Users/example/dev"],
+  "repos": ["service-a", "service-b"],
+  "include_prs": true,
+  "include_diffs": false,
+  "github_fallback": false,
   "output": "evidence-pack.md",
   "created_at": "2026-06-24T09:15:00+01:00"
 }
@@ -129,9 +136,17 @@ Inputs:
   - Jira
   - Azure
   - Dataverse
+  - Code repositories
 - Confluence space input.
 - Jira project input.
 - Azure resource group input.
+- Code repository controls:
+  - Repo root selector or text input.
+  - Discovered repository checklist.
+  - Repository text filter.
+  - Include PR metadata checkbox.
+  - Include bounded diffs checkbox.
+  - GitHub fallback checkbox.
 - Output folder selector under the Workbench.
 - Limit input.
 - Include Jira comments checkbox.
@@ -160,6 +175,7 @@ Sections:
   - Jira
   - Azure
   - Dataverse
+  - Code repositories
 - Gaps and warnings.
 - Deterministic analysis.
 
@@ -193,6 +209,8 @@ Local-only configuration:
 - Default Confluence space.
 - Default Jira project.
 - Default Azure resource group.
+- Default local repository roots.
+- Optional default repository subsets.
 - Whether to use `--refresh` by default.
 
 Do not store API tokens here.
@@ -238,6 +256,46 @@ If Dataverse is checked:
 --include-dataverse
 ```
 
+If Code repositories are checked:
+
+```bash
+--include-code
+--repo-root /Users/example/dev
+--repo service-a
+--repo service-b
+```
+
+If PR metadata or diffs are requested:
+
+```bash
+--include-prs
+--include-diffs
+```
+
+If GitHub fallback is enabled:
+
+```bash
+--github-fallback
+```
+
+The UI should prefer local repository evidence and should make GitHub fallback visually distinct because it depends on `gh` authentication and remote availability.
+
+## Code Repository Evidence
+
+Code evidence is specified in [assurance-code-evidence-spec.md](assurance-code-evidence-spec.md).
+
+Workbench UI responsibilities:
+
+- Let the user configure one or more local repo roots.
+- Discover Git repositories under those roots by calling `assurance code repos`.
+- Let the user select the subset of repositories for a run.
+- Preserve selected repo roots, repositories and code options in `request.json`.
+- Include Code repositories in source coverage and previous-run filters.
+- Show local/GitHub provider status in the results view.
+- Show code evidence gaps, including missing local repos, dirty working trees, failed `gh` lookups and truncated diffs.
+
+Initial UI behavior should not call `gh` directly. It should pass structured options to `assurance-cli` and render the resulting evidence files.
+
 ## Deterministic Analysis
 
 The first version should provide non-GenAI analysis only.
@@ -252,6 +310,7 @@ Potential checks:
 - Jira evidence present.
 - Azure evidence present when requested.
 - Dataverse evidence present when requested.
+- Code repository evidence present when requested.
 - Evidence pack contains a gaps section.
 - Commands completed without warnings.
 
@@ -284,6 +343,15 @@ Potential checks:
 - No security evidence found.
 - Confluence content was truncated.
 
+### Code Risk Flags
+
+- Code evidence missing when requested.
+- Selected repository was not found locally.
+- Repository working tree was dirty.
+- GitHub PR link could not be resolved.
+- Diff evidence was truncated.
+- No code matches found for the topic.
+
 Each analysis finding should include:
 
 - Rule ID.
@@ -311,7 +379,7 @@ Example:
 - Treat raw JSON output as potentially sensitive.
 - Prefer Markdown outputs with built-in redaction.
 - Do not provide UI controls for mutating commands.
-- Do not call `az`, `pac` or Atlassian APIs directly from the UI in v1; call `assurance-cli`.
+- Do not call `az`, `pac`, Atlassian APIs, GitHub APIs or Git commands directly from the UI in v1; call `assurance-cli`.
 - Clearly mark failed commands and partial evidence.
 
 ## Error Handling
@@ -328,6 +396,12 @@ Common errors should be actionable:
   - Suggest `az login`.
 - Power Platform CLI not found:
   - Suggest installing `pac` or configuring PATH.
+- GitHub CLI not found:
+  - Explain that local code evidence can still run.
+  - Suggest installing or authenticating `gh` only if GitHub fallback or PR evidence was requested.
+- Local repo missing:
+  - Show the configured repo root and selected repo name.
+  - Suggest updating repo settings or cloning/updating the local repo manually.
 - Command timed out:
   - Preserve partial logs.
   - Allow retry.

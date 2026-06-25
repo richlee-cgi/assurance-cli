@@ -75,14 +75,17 @@ def test_combined_evidence_pack_markdown_gaps() -> None:
         jira_markdown=None,
         azure_markdown="# Azure\n\n---\n\n## Azure Resource Search\n",
         dataverse_markdown=None,
+        code_markdown="# Code\n\n---\n\n### Local Repository Search\n",
         azure_requested=True,
         dataverse_requested=False,
+        code_requested=True,
         gaps=["Jira was skipped."],
     )
 
     assert "# Evidence Pack: booking" in markdown
     assert "## Confluence Evidence" in markdown
     assert "## Azure Resource Search" in markdown
+    assert "### Local Repository Search" in markdown
     assert "Jira was skipped." in markdown
     assert "`yes`" in markdown
 
@@ -94,12 +97,16 @@ def test_combined_evidence_pack_markdown_requested_but_empty() -> None:
         jira_markdown=None,
         azure_markdown=None,
         dataverse_markdown=None,
+        code_markdown=None,
         azure_requested=True,
         dataverse_requested=True,
+        code_requested=True,
         gaps=[],
     )
 
     assert "Azure: `requested, no evidence returned`" in markdown
     assert "Dataverse: `requested, no evidence returned`" in markdown
+    assert "Code: `requested, no evidence returned`" in markdown
     assert "_No Azure evidence returned._" in markdown
     assert "_No Dataverse evidence returned._" in markdown
+    assert "_No code evidence returned._" in markdown

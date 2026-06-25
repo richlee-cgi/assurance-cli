@@ -1,11 +1,11 @@
 ---
 name: Assurance CLI Operator
-description: Use the read-only assurance-cli to gather Confluence, Jira, Azure and Dataverse evidence for assurance reviews.
+description: Use the read-only assurance-cli to gather Confluence, Jira, Azure, Dataverse and local code evidence for assurance reviews.
 ---
 
 # Assurance CLI Operator Skill
 
-Use this skill when an assurance review needs evidence from Confluence, Jira, Azure, Dataverse or Power Platform and the local `assurance` command is available.
+Use this skill when an assurance review needs evidence from Confluence, Jira, Azure, Dataverse, Power Platform or local code repositories and the local `assurance` command is available.
 
 The CLI is designed for read-only evidence gathering. Prefer it over direct browser/API exploration when collecting structured Markdown evidence for review.
 
@@ -37,6 +37,8 @@ ATLASSIAN_DEFAULT_JIRA_PROJECT
 For Azure-backed commands, the user must already be logged in with `az login`.
 
 For Dataverse-backed commands, the user must already be authenticated with `pac auth create` or equivalent.
+
+For code-backed commands, prefer local checked-out repositories. Ask the user for the repo root and relevant repository subset when it is not obvious.
 
 ## Core Rule
 
@@ -81,6 +83,16 @@ Useful built-in presets:
 - `scaling`: APIM, Functions, scaling, performance, capacity and timeout concerns.
 
 If the user provides a specific topic with `--preset`, the topic overrides the preset search text while the preset still supplies inclusion defaults.
+
+Include local code evidence when implementation evidence is relevant:
+
+```bash
+assurance report evidence-pack "TOPIC" \
+  --include-code \
+  --repo-root /path/to/dev \
+  --repo service-a \
+  --out evidence/topic-pack.md
+```
 
 ## Confluence Evidence
 
@@ -199,6 +211,32 @@ assurance dataverse snapshot --out evidence/dataverse-snapshot.md
 ```
 
 Dataverse snapshots may take around a minute depending on `pac` and environment response time.
+
+## Code Repository Evidence
+
+List local Git repositories under a root:
+
+```bash
+assurance code repos --repo-root /path/to/dev
+```
+
+Search selected repositories:
+
+```bash
+assurance code search "TOPIC" \
+  --repo-root /path/to/dev \
+  --repo service-a \
+  --limit 30 \
+  --out evidence/code.md
+```
+
+Use `--repo-file` when the user has a saved repository subset:
+
+```bash
+assurance code search "TOPIC" --repo-root /path/to/dev --repo-file repos.txt
+```
+
+Code evidence is local-first. Do not run `git pull`, `git fetch`, `git checkout`, `git commit`, `git push`, or other mutating Git commands as part of evidence gathering unless the user explicitly asks outside this CLI workflow.
 
 ## Cache Use
 
