@@ -205,23 +205,23 @@ Implementation order:
 
 ### Phase 8A - Ruleset Files And Parser
 
-- [ ] Add built-in Markdown ruleset files:
-  - [ ] Architecture.
-  - [ ] Delivery.
-  - [ ] Operations.
-  - [ ] Security and privacy.
-  - [ ] Testing and quality.
-  - [ ] Risk.
-- [ ] Define and implement supported ruleset Markdown format:
-  - [ ] YAML front matter metadata.
-  - [ ] Required any terms.
-  - [ ] Required all terms.
-  - [ ] Positive terms.
-  - [ ] Negative terms.
-  - [ ] Applies-to presets.
-  - [ ] Applies-to sources.
-- [ ] Add parser tests for valid and invalid rulesets.
-- [ ] Add validation warnings for unsupported ruleset syntax.
+- [x] Add built-in Markdown ruleset files:
+  - [x] Architecture.
+  - [x] Delivery.
+  - [x] Operations.
+  - [x] Security and privacy.
+  - [x] Testing and quality.
+  - [x] Risk.
+- [x] Define and implement supported ruleset Markdown format:
+  - [x] YAML front matter metadata.
+  - [x] Required any terms.
+  - [x] Required all terms.
+  - [x] Positive terms.
+  - [x] Negative terms.
+  - [x] Applies-to presets.
+  - [x] Applies-to sources.
+- [x] Add parser tests for valid and invalid rulesets.
+- [x] Add validation warnings for unsupported ruleset syntax.
 
 ### Phase 8B - Evidence Section Parser And Matcher
 
