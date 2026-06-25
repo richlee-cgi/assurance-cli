@@ -238,6 +238,24 @@ assurance code search "TOPIC" --repo-root /path/to/dev --repo-file repos.txt
 
 Code evidence is local-first. Do not run `git pull`, `git fetch`, `git checkout`, `git commit`, `git push`, or other mutating Git commands as part of evidence gathering unless the user explicitly asks outside this CLI workflow.
 
+Resolve a specific GitHub pull request only when PR evidence is needed and `gh` is authenticated:
+
+```bash
+assurance code pr https://github.com/org/repo/pull/123 --include-diff --out evidence/pr.md
+```
+
+For combined evidence packs, PR metadata is opt-in and diffs are separately opt-in:
+
+```bash
+assurance report evidence-pack "TOPIC" \
+  --include-code \
+  --repo-root /path/to/dev \
+  --repo service-a \
+  --include-prs \
+  --include-diffs \
+  --out evidence/topic-pack.md
+```
+
 ## Cache Use
 
 The CLI caches Atlassian raw responses under `.assurance-cache/` with sensitive-looking fields redacted.

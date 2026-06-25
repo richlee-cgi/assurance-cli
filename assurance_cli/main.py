@@ -24,6 +24,7 @@ from assurance_cli.azure.markdown import (
     function_apps_markdown,
 )
 from assurance_cli.cache import Cache
+from assurance_cli.code.github import extract_github_pr_urls, get_pull_request_evidence
 from assurance_cli.code.local import discover_repositories, repo_selectors_from_file, search_repositories, select_repositories
 from assurance_cli.code.markdown import code_search_markdown, repositories_markdown
 from assurance_cli.config import load_config
@@ -280,6 +281,11 @@ def _code_topic_evidence_markdown(
     repo_file: Path | None,
     limit: int,
     max_file_bytes: int,
+    include_prs: bool = False,
+    include_diffs: bool = False,
+    github_fallback: bool = False,
+    max_diff_lines: int = 500,
+    linked_texts: list[str] | None = None,
 ) -> tuple[str | None, list[str]]:
     gaps: list[str] = []
     if not repo_roots:
@@ -290,7 +296,21 @@ def _code_topic_evidence_markdown(
     gaps.extend(selection_gaps)
     result = search_repositories(topic, selected, limit=limit, max_file_bytes=max_file_bytes)
     gaps.extend(result.gaps)
-    return code_search_markdown(result), gaps
+    pull_requests = []
+    if include_prs:
+        urls = extract_github_pr_urls(linked_texts or [])
+        if not urls:
+            gaps.append("PR metadata was requested but no GitHub pull request links were found in gathered evidence.")
+        for url in urls:
+            pull_request = get_pull_request_evidence(url, include_diff=include_diffs, max_diff_lines=max_diff_lines)
+            if pull_request.error:
+                gaps.append(f"GitHub PR `{url}` could not be resolved: {pull_request.error}")
+            if pull_request.diff_truncated:
+                gaps.append(f"Diff evidence for `{url}` was truncated.")
+            pull_requests.append(pull_request)
+    elif github_fallback:
+        gaps.append("GitHub fallback was requested but PR metadata was not enabled.")
+    return code_search_markdown(result, pull_requests=pull_requests), gaps
 
 
 @confluence_app.command("search")
@@ -967,6 +987,7 @@ def code_search_cmd(
         query=result.query,
         repositories=result.repositories,
         matches=result.matches,
+        commits=result.commits,
         gaps=all_gaps,
         truncated=result.truncated,
     )
@@ -1002,6 +1023,29 @@ def code_search_cmd(
     _emit(code_search_markdown(result), raw=False, out=out)
 
 
+@code_app.command("pr")
+def code_pr_cmd(
+    url: str = typer.Argument(..., help="GitHub pull request URL."),
+    include_diff: bool = typer.Option(False, "--include-diff", help="Include bounded PR diff output."),
+    max_diff_lines: int = typer.Option(500, "--max-diff-lines", min=1),
+    out: Optional[Path] = typer.Option(None, "--out"),
+    raw: bool = typer.Option(False, "--raw"),
+) -> None:
+    pull_request = get_pull_request_evidence(url, include_diff=include_diff, max_diff_lines=max_diff_lines)
+    if raw:
+        _emit(pull_request.__dict__, raw=True, out=out)
+        return
+    empty_result = type(search_repositories("", [], limit=1))(
+        query=url,
+        repositories=[],
+        matches=[],
+        commits=[],
+        gaps=[f"GitHub PR `{url}` could not be resolved: {pull_request.error}"] if pull_request.error else [],
+        truncated=False,
+    )
+    _emit(code_search_markdown(empty_result, pull_requests=[pull_request]), raw=False, out=out)
+
+
 @report_app.command("evidence-pack")
 def report_evidence_pack_cmd(
     topic: Optional[str] = typer.Argument(None),
@@ -1018,6 +1062,10 @@ def report_evidence_pack_cmd(
     repo: list[str] = typer.Option([], "--repo", help="Repository name or path to include."),
     repo_file: Optional[Path] = typer.Option(None, "--repo-file", help="Newline-delimited repository selectors."),
     max_file_bytes: int = typer.Option(20_000, "--max-file-bytes", min=1),
+    include_prs: bool = typer.Option(False, "--include-prs", help="Resolve GitHub PR links found in gathered evidence."),
+    include_diffs: bool = typer.Option(False, "--include-diffs", help="Include bounded PR diffs when resolving PRs."),
+    github_fallback: bool = typer.Option(False, "--github-fallback", help="Allow GitHub lookup as an explicit fallback."),
+    max_diff_lines: int = typer.Option(500, "--max-diff-lines", min=1),
     limit: int = typer.Option(10, "--limit", min=1),
     max_page_chars: int = typer.Option(8000, "--max-page-chars"),
     include_comments: bool = typer.Option(False, "--include-comments"),
@@ -1156,6 +1204,11 @@ def report_evidence_pack_cmd(
             repo_file=repo_file,
             limit=limit,
             max_file_bytes=max_file_bytes,
+            include_prs=include_prs,
+            include_diffs=include_diffs,
+            github_fallback=github_fallback,
+            max_diff_lines=max_diff_lines,
+            linked_texts=[text for text in [confluence_body, jira_body] if text],
         )
         gaps.extend(code_gaps)
 

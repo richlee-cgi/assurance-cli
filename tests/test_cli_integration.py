@@ -203,6 +203,29 @@ def test_report_evidence_pack_includes_code(monkeypatch, tmp_path: Path) -> None
     assert "app.py" in text
 
 
+def test_code_pr_cli_uses_mocked_github(monkeypatch) -> None:
+    class FakePr:
+        url = "https://github.com/org/repo/pull/123"
+        title = "Booking PR"
+        state = "MERGED"
+        author = "alice"
+        head_ref = "feature"
+        base_ref = "main"
+        merge_state = "CLEAN"
+        changed_files = 2
+        diff = ""
+        diff_truncated = False
+        error = ""
+
+    monkeypatch.setattr("assurance_cli.main.get_pull_request_evidence", lambda *args, **kwargs: FakePr())
+
+    result = CliRunner().invoke(app, ["code", "pr", "https://github.com/org/repo/pull/123"])
+
+    assert result.exit_code == 0
+    assert "Booking PR" in result.output
+    assert "MERGED" in result.output
+
+
 def test_azure_resource_search_cli_uses_mocked_runner(monkeypatch) -> None:
     def fake_run(command: list[str], *, dry_run: bool = False) -> AzureCommandResult:
         assert command[:3] == ["az", "graph", "query"]

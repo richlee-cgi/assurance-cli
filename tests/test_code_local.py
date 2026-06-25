@@ -26,6 +26,8 @@ def test_discover_repositories_and_search(tmp_path: Path) -> None:
 def test_code_search_markdown_reports_matches(tmp_path: Path) -> None:
     repo = _init_repo(tmp_path / "booking-service")
     (repo / "app.py").write_text("def booking_allocation():\n    return True\n", encoding="utf-8")
+    subprocess.run(["git", "-C", str(repo), "add", "app.py"], capture_output=True, text=True, check=True)
+    subprocess.run(["git", "-C", str(repo), "-c", "user.email=test@example.com", "-c", "user.name=Test", "commit", "-m", "Add booking allocation"], capture_output=True, text=True, check=True)
     repositories = discover_repositories([tmp_path])
     result = search_repositories("booking", repositories, limit=10)
 
@@ -35,6 +37,7 @@ def test_code_search_markdown_reports_matches(tmp_path: Path) -> None:
     assert "booking-service" in markdown
     assert "app.py" in markdown
     assert "booking_allocation" in markdown
+    assert "Add booking allocation" in markdown
 
 
 def _init_repo(path: Path) -> Path:

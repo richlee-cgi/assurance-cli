@@ -157,16 +157,16 @@ CLI prerequisites:
 
 - [x] Add `assurance code repos`.
 - [x] Add `assurance code search`.
-- [ ] Add `assurance code pr` for supplied GitHub PR URLs.
+- [x] Add `assurance code pr` for supplied GitHub PR URLs.
 - [x] Add local repo discovery under configured roots.
 - [x] Add bounded local content search.
-- [ ] Add bounded commit/log evidence.
-- [ ] Add read-only `gh` PR metadata retrieval.
-- [ ] Add opt-in bounded diff retrieval.
+- [x] Add bounded commit/log evidence.
+- [x] Add read-only `gh` PR metadata retrieval.
+- [x] Add opt-in bounded diff retrieval.
 - [x] Add redaction and truncation markers for code snippets.
 - [x] Add `--include-code` to `assurance report evidence-pack`.
 - [x] Add `--repo-root`, `--repo`, `--repo-file`.
-- [ ] Add `--include-prs`, `--include-diffs`, `--github-fallback`.
+- [x] Add `--include-prs`, `--include-diffs`, `--github-fallback`.
 - [x] Add Code Evidence section to combined evidence packs.
 
 UI work:
@@ -189,7 +189,7 @@ Acceptance:
 
 - [x] User can select local repos for a run.
 - [x] Evidence pack includes bounded local code evidence when requested.
-- [ ] GitHub PR evidence is opt-in and read-only.
+- [x] GitHub PR evidence is opt-in and read-only.
 - [ ] Missing repos, missing `gh` auth and truncated diffs are visible as gaps.
 
 ## Phase 8 - Deterministic Analysis

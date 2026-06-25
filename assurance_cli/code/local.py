@@ -69,10 +69,18 @@ class CodeMatch:
 
 
 @dataclass(frozen=True)
+class CommitMatch:
+    repo: Repository
+    sha: str
+    summary: str
+
+
+@dataclass(frozen=True)
 class CodeSearchResult:
     query: str
     repositories: list[Repository]
     matches: list[CodeMatch]
+    commits: list[CommitMatch]
     gaps: list[str]
     truncated: bool = False
 
@@ -121,6 +129,7 @@ def search_repositories(
     max_file_bytes: int = 20_000,
 ) -> CodeSearchResult:
     matches: list[CodeMatch] = []
+    commits: list[CommitMatch] = []
     gaps: list[str] = []
     lowered_query = query.lower()
     truncated = False
@@ -129,6 +138,7 @@ def search_repositories(
     for repo in repositories:
         if repo.dirty:
             gaps.append(f"Repository `{repo.name}` has local uncommitted changes.")
+        commits.extend(search_commits(query, repo, limit=5))
         for file_path in _iter_candidate_files(repo.path):
             if len(matches) >= limit:
                 truncated = True
@@ -149,7 +159,34 @@ def search_repositories(
                 break
     if not matches and repositories:
         gaps.append("Local code search returned no matches for the topic.")
-    return CodeSearchResult(query=query, repositories=repositories, matches=matches, gaps=gaps, truncated=truncated)
+    return CodeSearchResult(query=query, repositories=repositories, matches=matches, commits=commits, gaps=gaps, truncated=truncated)
+
+
+def search_commits(query: str, repo: Repository, *, limit: int, runner: GitRunner | None = None) -> list[CommitMatch]:
+    runner = runner or _run_git
+    result = runner(
+        [
+            "git",
+            "-C",
+            str(repo.path),
+            "log",
+            "--oneline",
+            "--decorate",
+            "--max-count",
+            str(limit),
+            "--grep",
+            query,
+        ]
+    )
+    if result.returncode != 0 or not result.stdout:
+        return []
+    commits = []
+    for line in result.stdout.splitlines():
+        if not line.strip():
+            continue
+        sha, _, summary = line.partition(" ")
+        commits.append(CommitMatch(repo=repo, sha=sha, summary=redact_text(summary.strip())))
+    return commits
 
 
 def repository_metadata(repo_path: Path, *, runner: GitRunner | None = None) -> Repository:

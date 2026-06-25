@@ -26,6 +26,7 @@ Command groups:
 - `assurance dataverse snapshot`
 - `assurance code repos`
 - `assurance code search`
+- `assurance code pr`
 - `assurance presets list`
 - `assurance presets show`
 - `assurance cache list`
@@ -146,6 +147,7 @@ assurance dataverse environments
 assurance dataverse snapshot --out evidence/dataverse-snapshot.md
 assurance code repos --repo-root /Users/example/dev
 assurance code search "booking allocation" --repo-root /Users/example/dev --repo booking-service --out evidence/code.md
+assurance code pr https://github.com/org/repo/pull/123 --include-diff --out evidence/pr.md
 ```
 
 Raw JSON can be emitted where useful:
@@ -222,6 +224,7 @@ Code evidence commands inspect local Git repositories only. They do not fetch, p
 assurance code repos --repo-root /Users/example/dev
 assurance code search "booking allocation" --repo-root /Users/example/dev --repo booking-service --limit 30
 assurance code search "timeout" --repo-root /Users/example/dev --repo-file repos.txt --max-file-bytes 20000
+assurance code pr https://github.com/org/repo/pull/123 --include-diff --max-diff-lines 300
 ```
 
 ## Combined reports
@@ -248,13 +251,15 @@ assurance report evidence-pack "Reservations API" \
   --include-code \
   --repo-root /Users/example/dev \
   --repo reservations-api \
+  --include-prs \
+  --include-diffs \
   --limit 3 \
   --out evidence/reservations-api-pack.md
 ```
 
 Dataverse snapshots call several `pac` commands and may take around a minute depending on the environment.
 
-Code evidence is local-first. GitHub/PR lookup is specified for a later slice; see [docs/assurance-code-evidence-spec.md](docs/assurance-code-evidence-spec.md).
+Code evidence is local-first. GitHub PR lookup is opt-in through `--include-prs`; bounded diffs require `--include-diffs`.
 
 ## Cache
 
