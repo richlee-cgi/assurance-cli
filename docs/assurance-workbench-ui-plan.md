@@ -113,34 +113,34 @@ Acceptance:
 
 Goal: display completed evidence in an organised way.
 
-- [ ] Render Markdown evidence pack.
-- [ ] Show run metadata.
-- [ ] Show command executed.
-- [ ] Show source coverage:
-  - [ ] Confluence.
-  - [ ] Jira.
-  - [ ] Azure.
-  - [ ] Dataverse.
-- [ ] Show gaps and warnings.
+- [x] Render Markdown evidence pack.
+- [x] Show run metadata.
+- [x] Show command executed.
+- [x] Show source coverage:
+  - [x] Confluence.
+  - [x] Jira.
+  - [x] Azure.
+  - [x] Dataverse.
+- [x] Show gaps and warnings.
 - [ ] Add “open output folder” action.
 - [ ] Add “open in VS Code” action if feasible.
 
 Acceptance:
 
-- [ ] User can inspect a completed evidence pack in the browser.
+- [x] User can inspect a completed evidence pack in the browser.
 - [ ] User can navigate to saved files.
 
 ## Phase 6 - Previous Runs
 
 Goal: browse existing Workbench evidence runs.
 
-- [ ] Scan configured runs folder.
-- [ ] Parse `request.json`.
-- [ ] Parse run status from exit code/log files.
-- [ ] List previous runs.
+- [x] Scan configured runs folder.
+- [x] Parse `request.json`.
+- [x] Parse run status from exit code/log files.
+- [x] List previous runs.
 - [ ] Filter by topic.
 - [ ] Filter by preset/source.
-- [ ] Open previous run.
+- [x] Open previous run.
 - [ ] Re-run from previous `request.json`.
 
 Acceptance:
