@@ -78,7 +78,7 @@ Goal: configure common evidence pack runs from the browser.
 - [x] Include Jira comments checkbox.
 - [x] Refresh cache checkbox.
 - [x] No cache checkbox.
-- [ ] Output folder preview.
+- [x] Output folder preview.
 - [x] Command preview.
 
 Acceptance:
@@ -94,12 +94,12 @@ Goal: run the generated CLI command and capture outputs.
 - [x] Write `request.json`.
 - [x] Write `command.txt`.
 - [x] Execute CLI via subprocess argv list, not shell string.
-- [ ] Stream stdout/stderr to UI.
+- [x] Stream stdout/stderr to UI.
 - [x] Save `stdout.log`.
 - [x] Save `stderr.log`.
 - [x] Save `evidence-pack.md`.
 - [x] Capture exit code.
-- [ ] Support cancellation.
+- [x] Support cancellation.
 - [x] Add timeout handling.
 
 Acceptance:
@@ -122,13 +122,13 @@ Goal: display completed evidence in an organised way.
   - [x] Azure.
   - [x] Dataverse.
 - [x] Show gaps and warnings.
-- [ ] Add “open output folder” action.
-- [ ] Add “open in VS Code” action if feasible.
+- [x] Add “open output folder” action.
+- [x] Add “open in VS Code” action if feasible.
 
 Acceptance:
 
 - [x] User can inspect a completed evidence pack in the browser.
-- [ ] User can navigate to saved files.
+- [x] User can navigate to saved files.
 
 ## Phase 6 - Previous Runs
 
@@ -138,10 +138,10 @@ Goal: browse existing Workbench evidence runs.
 - [x] Parse `request.json`.
 - [x] Parse run status from exit code/log files.
 - [x] List previous runs.
-- [ ] Filter by topic.
-- [ ] Filter by preset/source.
+- [x] Filter by topic.
+- [x] Filter by preset/source.
 - [x] Open previous run.
-- [ ] Re-run from previous `request.json`.
+- [x] Re-run from previous `request.json`.
 
 Acceptance:
 
