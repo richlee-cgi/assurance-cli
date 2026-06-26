@@ -71,7 +71,8 @@ def adf_to_markdown(node: Any) -> str:
     if node_type == "bulletList":
         return "".join(_list_item(item, "- ") for item in content) + "\n"
     if node_type == "orderedList":
-        return "".join(_list_item(item, f"{idx}. ") for idx, item in enumerate(content, 1)) + "\n"
+        start = _ordered_list_start(node)
+        return "".join(_list_item(item, f"{idx}. ") for idx, item in enumerate(content, start)) + "\n"
     if node_type == "listItem":
         return adf_to_markdown(content).strip()
     if node_type == "codeBlock":
@@ -86,6 +87,15 @@ def adf_to_markdown(node: Any) -> str:
 def _list_item(item: Any, prefix: str) -> str:
     text = adf_to_markdown(item).strip().replace("\n", "\n  ")
     return f"{prefix}{text}\n"
+
+
+def _ordered_list_start(node: dict[str, Any]) -> int:
+    raw_start = node.get("attrs", {}).get("order", 1)
+    try:
+        start = int(raw_start)
+    except (TypeError, ValueError):
+        return 1
+    return max(start, 1)
 
 
 def fenced_json(value: Any) -> str:
