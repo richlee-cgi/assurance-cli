@@ -48,6 +48,52 @@ After installation, verify the command is available:
 assurance --help
 ```
 
+### Windows setup
+
+Use PowerShell from the cloned repo:
+
+```powershell
+cd assurance-cli
+py -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -e ".[dev]"
+assurance --help
+```
+
+If PowerShell blocks virtual environment activation, allow locally-created scripts for the current user:
+
+```powershell
+Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
+```
+
+The installed executable is usually:
+
+```text
+C:\path\to\assurance-cli\.venv\Scripts\assurance.exe
+```
+
+PowerShell multiline examples use a trailing backtick rather than `\`:
+
+```powershell
+assurance report evidence-pack "booking allocation" `
+  --confluence-space SPACE `
+  --jira-project PROJ `
+  --out evidence\booking-allocation-pack.md
+```
+
+Install and authenticate optional provider CLIs separately on Windows:
+
+```powershell
+winget install Microsoft.AzureCLI
+winget install GitHub.cli
+winget install Git.Git
+dotnet tool install --global Microsoft.PowerApps.CLI.Tool --version 1.43.6
+
+az login
+gh auth login
+pac auth create --deviceCode
+```
+
 ## Shell completion
 
 The CLI uses Typer, so shell completion is available after local installation.
