@@ -396,7 +396,7 @@ def _code_topic_evidence_markdown(
     gaps.extend(result.gaps)
     pull_requests = []
     if include_prs:
-        urls = extract_github_pr_urls(linked_texts or [])
+        urls = extract_github_pr_urls([topic, *(linked_texts or [])])
         if not urls:
             gaps.append("PR metadata was requested but no GitHub pull request links were found in gathered evidence.")
         for url in urls:

@@ -303,6 +303,57 @@ def test_report_evidence_pack_code_only_does_not_require_atlassian_env(monkeypat
     assert "booking-service" in text
 
 
+def test_report_evidence_pack_code_only_uses_pr_topic(monkeypatch, tmp_path: Path) -> None:
+    for name in ("ATLASSIAN_BASE_URL", "ATLASSIAN_EMAIL", "ATLASSIAN_API_TOKEN"):
+        monkeypatch.delenv(name, raising=False)
+    repo = tmp_path / "booking-service"
+    repo.mkdir()
+    (repo / "README.md").write_text("booking allocation implementation\n", encoding="utf-8")
+    subprocess_result = subprocess.run(["git", "init", str(repo)], capture_output=True, text=True)
+    assert subprocess_result.returncode == 0
+    output = tmp_path / "pack.md"
+
+    class FakePr:
+        url = "https://github.com/org/repo/pull/123"
+        title = "Booking PR"
+        state = "OPEN"
+        author = "alice"
+        head_ref = "feature"
+        base_ref = "main"
+        merge_state = "BLOCKED"
+        changed_files = 3
+        diff = "diff --git a/README.md b/README.md"
+        diff_truncated = False
+        error = ""
+
+    monkeypatch.setattr("assurance_cli.main.get_pull_request_evidence", lambda *args, **kwargs: FakePr())
+
+    result = CliRunner().invoke(
+        app,
+        [
+            "report",
+            "evidence-pack",
+            "https://github.com/org/repo/pull/123",
+            "--skip-confluence",
+            "--skip-jira",
+            "--include-code",
+            "--repo-root",
+            str(tmp_path),
+            "--repo",
+            "booking-service",
+            "--include-prs",
+            "--include-diffs",
+            "--out",
+            str(output),
+        ],
+    )
+
+    text = output.read_text(encoding="utf-8")
+    assert result.exit_code == 0
+    assert "Booking PR" in text
+    assert "diff --git" in text
+
+
 def test_code_pr_cli_uses_mocked_github(monkeypatch, tmp_path: Path) -> None:
     repo = tmp_path / "booking-service"
     repo.mkdir()
