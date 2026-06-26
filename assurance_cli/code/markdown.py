@@ -100,7 +100,7 @@ def _code_search_body(result: CodeSearchResult, *, pull_requests: list[PullReque
         for pr in pull_requests:
             if pr.diff:
                 body += f"\n#### Diff: {pr.url}\n\n"
-                body += "_Standard git diff: `+` lines are additions, `-` lines are removals. Markdown code fences inside the diff are escaped so the whole file chunk renders consistently._\n\n"
+                body += "_Standard git diff: `+` lines are additions, `-` lines are removals. Diff chunks use longer Markdown fences so nested code fences remain intact._\n\n"
                 body += _diff_sections_markdown(pr.diff)
                 if pr.diff_truncated:
                     body += "\n_Diff output was truncated at the configured line limit._\n"
@@ -118,11 +118,11 @@ def _code_search_body(result: CodeSearchResult, *, pull_requests: list[PullReque
 def _diff_sections_markdown(diff: str) -> str:
     sections = _split_diff_sections(diff)
     if not sections:
-        return f"```diff\n{_escape_nested_fences(diff)}\n```\n"
+        return _fenced_diff(diff)
     body = ""
     for section in sections:
         body += f"##### {_diff_section_title(section)}\n\n"
-        body += f"```diff\n{_escape_nested_fences(section)}\n```\n\n"
+        body += _fenced_diff(section) + "\n"
     return body
 
 
@@ -147,12 +147,18 @@ def _diff_section_title(section: str) -> str:
     return "Diff chunk"
 
 
-def _escape_nested_fences(value: str) -> str:
-    return "\n".join(_escape_nested_fence_line(line) for line in value.splitlines())
+def _fenced_diff(value: str) -> str:
+    fence = _outer_fence(value)
+    return f"{fence}diff\n{value}\n{fence}\n"
 
 
-def _escape_nested_fence_line(line: str) -> str:
-    marker_index = line.find("```")
-    if marker_index >= 0 and not line[:marker_index].strip(" +-"):
-        return line[:marker_index] + "`\u200b``" + line[marker_index + 3 :]
-    return line
+def _outer_fence(value: str) -> str:
+    longest = 0
+    current = 0
+    for char in value:
+        if char == "`":
+            current += 1
+            longest = max(longest, current)
+        else:
+            current = 0
+    return "`" * max(4, longest + 1)

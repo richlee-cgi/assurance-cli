@@ -60,7 +60,7 @@ def test_get_pull_request_evidence_reports_failure() -> None:
     assert pr.error == "not authenticated"
 
 
-def test_code_search_markdown_escapes_nested_diff_fences() -> None:
+def test_code_search_markdown_uses_longer_outer_fences_for_nested_diff_fences() -> None:
     class FakePr:
         url = "https://github.com/org/repo/pull/123"
         title = "Docs change"
@@ -85,7 +85,37 @@ def test_code_search_markdown_escapes_nested_diff_fences() -> None:
         pull_requests=[FakePr()],
     )
 
-    assert "```diff" in markdown
-    assert "+`\u200b``bash" in markdown
-    assert "+`\u200b``" in markdown
-    assert "+```bash" not in markdown
+    assert "````diff" in markdown
+    assert "+```bash" in markdown
+    assert "+```" in markdown
+    assert "\u200b" not in markdown
+
+
+def test_code_search_markdown_handles_longer_nested_fences() -> None:
+    class FakePr:
+        url = "https://github.com/org/repo/pull/123"
+        title = "Docs change"
+        state = "OPEN"
+        author = "alice"
+        head_ref = "feature"
+        base_ref = "main"
+        merge_state = "CLEAN"
+        changed_files = 1
+        diff = "+````markdown\n+content\n+````"
+        diff_truncated = False
+        error = ""
+
+    markdown = code_search_markdown(
+        CodeSearchResult(
+            query="https://github.com/org/repo/pull/123",
+            repositories=[],
+            matches=[],
+            commits=[],
+            gaps=[],
+        ),
+        pull_requests=[FakePr()],
+    )
+
+    assert "`````diff" in markdown
+    assert "+````markdown" in markdown
+    assert "\u200b" not in markdown
