@@ -269,7 +269,13 @@ def test_report_evidence_pack_includes_code(monkeypatch, tmp_path: Path) -> None
     assert "app.py" in text
 
 
-def test_code_pr_cli_uses_mocked_github(monkeypatch) -> None:
+def test_code_pr_cli_uses_mocked_github(monkeypatch, tmp_path: Path) -> None:
+    repo = tmp_path / "booking-service"
+    repo.mkdir()
+    (repo / "README.md").write_text("https://github.com/org/repo/pull/123\n", encoding="utf-8")
+    subprocess_result = subprocess.run(["git", "init", str(repo)], capture_output=True, text=True)
+    assert subprocess_result.returncode == 0
+
     class FakePr:
         url = "https://github.com/org/repo/pull/123"
         title = "Booking PR"
@@ -285,11 +291,24 @@ def test_code_pr_cli_uses_mocked_github(monkeypatch) -> None:
 
     monkeypatch.setattr("assurance_cli.main.get_pull_request_evidence", lambda *args, **kwargs: FakePr())
 
-    result = CliRunner().invoke(app, ["code", "pr", "https://github.com/org/repo/pull/123"])
+    result = CliRunner().invoke(
+        app,
+        [
+            "code",
+            "pr",
+            "https://github.com/org/repo/pull/123",
+            "--repo-root",
+            str(tmp_path),
+            "--repo",
+            "booking-service",
+        ],
+    )
 
     assert result.exit_code == 0
     assert "Booking PR" in result.output
     assert "MERGED" in result.output
+    assert "booking-service" in result.output
+    assert "README.md" in result.output
 
 
 def test_azure_resource_search_cli_uses_mocked_runner(monkeypatch) -> None:

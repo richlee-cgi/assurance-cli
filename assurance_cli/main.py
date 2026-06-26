@@ -1104,8 +1104,12 @@ def code_search_cmd(
 @code_app.command("pr")
 def code_pr_cmd(
     url: str = typer.Argument(..., help="GitHub pull request URL."),
+    repo_root: list[Path] = typer.Option([], "--repo-root", help="Directory containing local Git repositories."),
+    repo: list[str] = typer.Option([], "--repo", help="Repository name or path to include."),
+    repo_file: Optional[Path] = typer.Option(None, "--repo-file", help="Newline-delimited repository selectors."),
     include_diff: bool = typer.Option(False, "--include-diff", help="Include bounded PR diff output."),
     max_diff_lines: int = typer.Option(500, "--max-diff-lines", min=1),
+    max_file_bytes: int = typer.Option(20_000, "--max-file-bytes", min=1),
     out: Optional[Path] = typer.Option(None, "--out"),
     raw: bool = typer.Option(False, "--raw"),
 ) -> None:
@@ -1113,15 +1117,22 @@ def code_pr_cmd(
     if raw:
         _emit(pull_request.__dict__, raw=True, out=out)
         return
-    empty_result = type(search_repositories("", [], limit=1))(
-        query=url,
-        repositories=[],
-        matches=[],
-        commits=[],
-        gaps=[f"GitHub PR `{url}` could not be resolved: {pull_request.error}"] if pull_request.error else [],
-        truncated=False,
+    discovered = discover_repositories(repo_root) if repo_root else []
+    selectors = [*repo, *repo_selectors_from_file(repo_file)]
+    selected, gaps = select_repositories(discovered, selectors)
+    if pull_request.error:
+        gaps.append(f"GitHub PR `{url}` could not be resolved: {pull_request.error}")
+    result = search_repositories(url, selected, limit=10, max_file_bytes=max_file_bytes)
+    gaps.extend(result.gaps)
+    result = type(result)(
+        query=result.query,
+        repositories=result.repositories,
+        matches=result.matches,
+        commits=result.commits,
+        gaps=gaps,
+        truncated=result.truncated,
     )
-    _emit(code_search_markdown(empty_result, pull_requests=[pull_request]), raw=False, out=out)
+    _emit(code_search_markdown(result, pull_requests=[pull_request], command="assurance code pr"), raw=False, out=out)
 
 
 @report_app.command("evidence-pack")

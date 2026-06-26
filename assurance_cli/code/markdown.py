@@ -25,8 +25,13 @@ def repositories_markdown(repositories: list[Repository], *, roots: list[str]) -
     return body
 
 
-def code_search_markdown(result: CodeSearchResult, *, pull_requests: list[PullRequestEvidence] | None = None) -> str:
-    body = document_header("Code Evidence", "Local Git", "assurance code search", result.query)
+def code_search_markdown(
+    result: CodeSearchResult,
+    *,
+    pull_requests: list[PullRequestEvidence] | None = None,
+    command: str = "assurance code search",
+) -> str:
+    body = document_header("Code Evidence", "Local Git", command, result.query)
     body += _code_search_body(result, pull_requests=pull_requests or [])
     return body
 
@@ -94,7 +99,9 @@ def _code_search_body(result: CodeSearchResult, *, pull_requests: list[PullReque
         body += markdown_table(["URL", "Title", "State", "Author", "Branches", "Merge", "Files", "Error"], rows, max_cell_chars=160)
         for pr in pull_requests:
             if pr.diff:
-                body += f"\n#### Diff: {pr.url}\n\n```diff\n{pr.diff}\n```\n"
+                body += f"\n#### Diff: {pr.url}\n\n"
+                body += "_Standard git diff: `+` lines are additions, `-` lines are removals. Markdown code fences inside the diff are escaped so the whole file chunk renders consistently._\n\n"
+                body += _diff_sections_markdown(pr.diff)
                 if pr.diff_truncated:
                     body += "\n_Diff output was truncated at the configured line limit._\n"
     else:
@@ -106,3 +113,46 @@ def _code_search_body(result: CodeSearchResult, *, pull_requests: list[PullReque
     else:
         body += "_No local code evidence gaps identified._\n"
     return body
+
+
+def _diff_sections_markdown(diff: str) -> str:
+    sections = _split_diff_sections(diff)
+    if not sections:
+        return f"```diff\n{_escape_nested_fences(diff)}\n```\n"
+    body = ""
+    for section in sections:
+        body += f"##### {_diff_section_title(section)}\n\n"
+        body += f"```diff\n{_escape_nested_fences(section)}\n```\n\n"
+    return body
+
+
+def _split_diff_sections(diff: str) -> list[str]:
+    sections: list[list[str]] = []
+    current: list[str] = []
+    for line in diff.splitlines():
+        if line.startswith("diff --git ") and current:
+            sections.append(current)
+            current = []
+        current.append(line)
+    if current:
+        sections.append(current)
+    return ["\n".join(section) for section in sections if section]
+
+
+def _diff_section_title(section: str) -> str:
+    first_line = section.splitlines()[0] if section else "Diff chunk"
+    parts = first_line.split()
+    if len(parts) >= 4:
+        return parts[3].removeprefix("b/")
+    return "Diff chunk"
+
+
+def _escape_nested_fences(value: str) -> str:
+    return "\n".join(_escape_nested_fence_line(line) for line in value.splitlines())
+
+
+def _escape_nested_fence_line(line: str) -> str:
+    marker_index = line.find("```")
+    if marker_index >= 0 and not line[:marker_index].strip(" +-"):
+        return line[:marker_index] + "`\u200b``" + line[marker_index + 3 :]
+    return line
