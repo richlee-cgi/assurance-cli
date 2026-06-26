@@ -269,6 +269,40 @@ def test_report_evidence_pack_includes_code(monkeypatch, tmp_path: Path) -> None
     assert "app.py" in text
 
 
+def test_report_evidence_pack_code_only_does_not_require_atlassian_env(monkeypatch, tmp_path: Path) -> None:
+    for name in ("ATLASSIAN_BASE_URL", "ATLASSIAN_EMAIL", "ATLASSIAN_API_TOKEN"):
+        monkeypatch.delenv(name, raising=False)
+    repo = tmp_path / "booking-service"
+    repo.mkdir()
+    (repo / "app.py").write_text("booking allocation implementation\n", encoding="utf-8")
+    subprocess_result = subprocess.run(["git", "init", str(repo)], capture_output=True, text=True)
+    assert subprocess_result.returncode == 0
+    output = tmp_path / "pack.md"
+
+    result = CliRunner().invoke(
+        app,
+        [
+            "report",
+            "evidence-pack",
+            "booking",
+            "--skip-confluence",
+            "--skip-jira",
+            "--include-code",
+            "--repo-root",
+            str(tmp_path),
+            "--repo",
+            "booking-service",
+            "--out",
+            str(output),
+        ],
+    )
+
+    text = output.read_text(encoding="utf-8")
+    assert result.exit_code == 0
+    assert "Code: `yes`" in text
+    assert "booking-service" in text
+
+
 def test_code_pr_cli_uses_mocked_github(monkeypatch, tmp_path: Path) -> None:
     repo = tmp_path / "booking-service"
     repo.mkdir()

@@ -1201,7 +1201,7 @@ def report_evidence_pack_cmd(
     if not topic:
         raise AssuranceError("Provide a topic argument or --preset.")
 
-    config = load_config().atlassian
+    config = load_config().atlassian if not (skip_confluence and skip_jira) else None
     cache = _cache(cache_dir, no_cache)
     gaps: list[str] = []
     confluence_body = None
@@ -1214,6 +1214,8 @@ def report_evidence_pack_cmd(
     excluded_jira_issues = 0
 
     if not skip_confluence:
+        if config is None:
+            raise AssuranceError("Atlassian configuration is required when Confluence evidence is included.")
         selected_space = confluence_space or config.default_confluence_space
         cql = build_cql(topic, cql=None, space=selected_space, content_type="page")
         confluence_search_data = _fetch_confluence_search(
@@ -1257,6 +1259,8 @@ def report_evidence_pack_cmd(
         )
 
     if not skip_jira:
+        if config is None:
+            raise AssuranceError("Atlassian configuration is required when Jira evidence is included.")
         selected_project = jira_project or config.default_jira_project
         jql = build_jql(
             topic,
