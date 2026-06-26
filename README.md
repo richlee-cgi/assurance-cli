@@ -42,6 +42,12 @@ python3 -m venv .venv
 python -m pip install -e ".[dev]"
 ```
 
+After installation, verify the command is available:
+
+```bash
+assurance --help
+```
+
 ## Shell completion
 
 The CLI uses Typer, so shell completion is available after local installation.
@@ -72,7 +78,9 @@ assurance report evidence-pack --<TAB>
 
 For VS Code Copilot agents or local model workflows, see [docs/assurance-cli-skill.md](docs/assurance-cli-skill.md). It describes when and how an agent should use the CLI to gather read-only assurance evidence.
 
-For a proposed local web UI wrapper that keeps the CLI standalone, see [docs/assurance-workbench-ui-spec.md](docs/assurance-workbench-ui-spec.md) and [docs/assurance-workbench-ui-plan.md](docs/assurance-workbench-ui-plan.md).
+For a local browser wrapper that keeps the CLI standalone, use the sibling `assurance-workbench-ui` repo. The UI builds and runs `assurance report evidence-pack` commands, saves timestamped run folders, and renders completed evidence packs in the browser.
+
+The original UI specification and implementation plan are kept in [docs/assurance-workbench-ui-spec.md](docs/assurance-workbench-ui-spec.md) and [docs/assurance-workbench-ui-plan.md](docs/assurance-workbench-ui-plan.md).
 
 ## Configure
 
@@ -87,6 +95,14 @@ export ATLASSIAN_DEFAULT_JIRA_PROJECT="PROJ"
 ```
 
 Secrets are never intentionally printed or cached. The API token is used only for HTTP Basic Auth.
+
+Minimum credentials depend on the sources you use:
+
+- Confluence and Jira need `ATLASSIAN_BASE_URL`, `ATLASSIAN_EMAIL` and `ATLASSIAN_API_TOKEN`.
+- Azure evidence needs the Azure CLI installed and signed in with `az login`.
+- Dataverse evidence needs the Power Platform CLI installed and authenticated with `pac auth create`.
+- Local code evidence needs checked-out Git repositories.
+- GitHub PR lookup needs the GitHub CLI installed and authenticated with `gh auth login`.
 
 ### Corporate TLS / Zscaler
 
@@ -126,6 +142,17 @@ pac auth list
 ```
 
 ## Examples
+
+First useful combined evidence pack:
+
+```bash
+assurance report evidence-pack "booking allocation" \
+  --confluence-space SPACE \
+  --jira-project PROJ \
+  --out evidence/booking-allocation-pack.md
+```
+
+Add presets, Azure, Dataverse or code repository evidence when the review needs them:
 
 ```bash
 assurance confluence search "booking allocation" --space SPACE --limit 20
