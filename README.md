@@ -33,6 +33,21 @@ Command groups:
 - `assurance cache show`
 - `assurance cache clear`
 
+## New User Start Here
+
+Clone this repo when you want the command-line tool directly or you want to develop the CLI.
+
+```bash
+git clone https://github.com/richlee-cgi/assurance-cli.git
+cd assurance-cli
+python3 -m venv .venv
+. .venv/bin/activate
+python -m pip install -e ".[dev]"
+assurance --help
+```
+
+If you want the browser app, start with the sibling `assurance-workbench-ui` repo instead. It installs `assurance-cli` as a Python dependency and lets you override the CLI executable path later if needed.
+
 ## Install for local development
 
 ```bash
