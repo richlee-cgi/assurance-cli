@@ -12,6 +12,12 @@ def test_help() -> None:
     assert "presets" in result.output
 
 
+def test_version() -> None:
+    result = CliRunner().invoke(app, ["--version"])
+    assert result.exit_code == 0
+    assert "assurance-cli 0.1.0" in result.output
+
+
 def test_azure_check_dry_run() -> None:
     result = CliRunner().invoke(app, ["azure", "check", "--dry-run"])
     assert result.exit_code == 0

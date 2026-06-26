@@ -43,6 +43,7 @@ from assurance_cli.reports.evidence_pack import (
     jira_evidence_pack_markdown,
 )
 from assurance_cli.util.redaction import redact
+from assurance_cli.version import APP_VERSION
 
 app = typer.Typer(help="Read-only assurance evidence gathering CLI.")
 confluence_app = typer.Typer(help="Read-only Confluence retrieval.")
@@ -64,6 +65,25 @@ app.add_typer(report_app, name="report")
 app.add_typer(presets_app, name="presets")
 
 stderr = Console(stderr=True)
+
+
+def _version_callback(value: bool) -> None:
+    if value:
+        typer.echo(f"assurance-cli {APP_VERSION}")
+        raise typer.Exit()
+
+
+@app.callback()
+def root(
+    version: Optional[bool] = typer.Option(
+        None,
+        "--version",
+        callback=_version_callback,
+        is_eager=True,
+        help="Show version and exit.",
+    ),
+) -> None:
+    return None
 
 
 def _cache(cache_dir: Path, no_cache: bool) -> Cache:
