@@ -22,7 +22,8 @@ def test_confluence_evidence_pack_markdown() -> None:
 
     markdown = confluence_evidence_pack_markdown(
         topic="booking",
-        cql='space = DSP AND type = page AND text ~ "booking"',
+        cqls=['space = DSP AND type = page AND text ~ "booking"'],
+        search_queries=["booking"],
         search_results=search,
         pages=pages,
         base_url="https://example.atlassian.net",
@@ -30,6 +31,8 @@ def test_confluence_evidence_pack_markdown() -> None:
     )
 
     assert "# Confluence Evidence Pack: booking" in markdown
+    assert "Queries: `booking`" in markdown
+    assert 'space = DSP AND type = page AND text ~ "booking"' in markdown
     assert "Useful evidence" in markdown
     assert "Pages retrieved: `1` of `1`" in markdown
 
@@ -56,7 +59,8 @@ def test_jira_evidence_pack_markdown_status_summary() -> None:
 
     markdown = jira_evidence_pack_markdown(
         topic="booking",
-        jql='project = ABC AND text ~ "booking"',
+        jqls=['project = ABC AND text ~ "booking"'],
+        search_queries=["booking"],
         search_results={"issues": [{"key": "ABC-123"}]},
         issues=[issue],
         base_url="https://example.atlassian.net",
@@ -64,6 +68,8 @@ def test_jira_evidence_pack_markdown_status_summary() -> None:
     )
 
     assert "# Jira Evidence Pack: booking" in markdown
+    assert "Queries: `booking`" in markdown
+    assert 'project = ABC AND text ~ "booking"' in markdown
     assert "- `In Progress`: 1" in markdown
     assert "ABC-123: Booking work" in markdown
 
@@ -88,6 +94,8 @@ def test_combined_evidence_pack_markdown_gaps() -> None:
     assert "### Local Repository Search" in markdown
     assert "Jira was skipped." in markdown
     assert "`yes`" in markdown
+    assert "## Search Strategy" in markdown
+    assert "- `booking`" in markdown
 
 
 def test_combined_evidence_pack_markdown_exclusions() -> None:
@@ -139,3 +147,5 @@ def test_combined_evidence_pack_markdown_requested_but_empty() -> None:
     assert "_No Azure evidence returned._" in markdown
     assert "_No Dataverse evidence returned._" in markdown
     assert "_No code evidence returned._" in markdown
+    assert "No retrieval warnings identified" in markdown
+    assert "does not mean the evidence is complete" in markdown

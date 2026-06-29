@@ -25,7 +25,7 @@ from assurance_cli.azure.markdown import (
 )
 from assurance_cli.cache import Cache
 from assurance_cli.code.github import extract_github_pr_urls, get_pull_request_evidence
-from assurance_cli.code.local import discover_repositories, repo_selectors_from_file, search_repositories, select_repositories
+from assurance_cli.code.local import CodeSearchResult, discover_repositories, repo_selectors_from_file, search_repositories, select_repositories
 from assurance_cli.code.markdown import code_search_markdown, repositories_markdown
 from assurance_cli.config import load_config
 from assurance_cli.dataverse.markdown import (
@@ -293,6 +293,88 @@ def _dataverse_topic_evidence_markdown() -> tuple[str | None, str | None]:
     return markdown, None if not warnings else "Dataverse evidence retrieval completed with warnings."
 
 
+def _evidence_queries(topic: str, explicit_queries: list[str], preset: str | None) -> list[str]:
+    queries = [topic, *explicit_queries]
+    queries.extend(_preset_expanded_queries(topic, preset))
+    return _dedupe_strings(queries)
+
+
+def _preset_expanded_queries(topic: str, preset: str | None) -> list[str]:
+    if preset == "architecture":
+        return [
+            f"ADR {topic}",
+            f"KDD {topic}",
+            f"OP {topic}",
+            f"Options Paper {topic}",
+            f"{topic} architecture decision",
+            f"{topic} integration architecture",
+        ]
+    if preset == "delivery":
+        return [
+            f"{topic} epic",
+            f"{topic} story",
+            f"{topic} acceptance criteria",
+            f"{topic} implementation",
+            f"{topic} integration test",
+        ]
+    if preset == "risk":
+        return [
+            f"{topic} risk",
+            f"{topic} blocker",
+            f"{topic} workaround",
+            f"{topic} error handling",
+            f"{topic} unresolved",
+        ]
+    return []
+
+
+def _dedupe_strings(values: list[str]) -> list[str]:
+    deduped: list[str] = []
+    seen: set[str] = set()
+    for value in values:
+        normalized = " ".join(str(value).split())
+        if not normalized:
+            continue
+        key = normalized.casefold()
+        if key in seen:
+            continue
+        seen.add(key)
+        deduped.append(normalized)
+    return deduped
+
+
+def _merge_code_search_results(query: str, results: list[CodeSearchResult], selection_gaps: list[str]) -> CodeSearchResult:
+    repositories = results[0].repositories if results else []
+    matches = []
+    match_keys = set()
+    commits = []
+    commit_keys = set()
+    gaps = list(selection_gaps)
+    truncated = False
+    for result in results:
+        truncated = truncated or result.truncated
+        for match in result.matches:
+            key = (str(match.repo.path), str(match.file_path), match.line_number, match.line)
+            if key in match_keys:
+                continue
+            match_keys.add(key)
+            matches.append(match)
+        for commit in result.commits:
+            key = (str(commit.repo.path), commit.sha)
+            if key in commit_keys:
+                continue
+            commit_keys.add(key)
+            commits.append(commit)
+        for gap in result.gaps:
+            if gap == "Local code search returned no matches for the topic.":
+                continue
+            if gap not in gaps:
+                gaps.append(gap)
+    if not matches and repositories:
+        gaps.append("Local code search returned no matches for the configured queries.")
+    return CodeSearchResult(query=query, repositories=repositories, matches=matches, commits=commits, gaps=gaps, truncated=truncated)
+
+
 def _confluence_parent_ids(values: list[str]) -> set[str]:
     parent_ids: set[str] = set()
     for value in values:
@@ -374,6 +456,7 @@ def _normalize_team_value(value: object) -> str:
 def _code_topic_evidence_markdown(
     *,
     topic: str,
+    queries: list[str],
     repo_roots: list[Path],
     repos: list[str],
     repo_file: Path | None,
@@ -392,8 +475,11 @@ def _code_topic_evidence_markdown(
     selectors = [*repos, *repo_selectors_from_file(repo_file)]
     selected, selection_gaps = select_repositories(discovered, selectors)
     gaps.extend(selection_gaps)
-    result = search_repositories(topic, selected, limit=limit, max_file_bytes=max_file_bytes)
-    gaps.extend(result.gaps)
+    query_results = [
+        search_repositories(query, selected, limit=limit, max_file_bytes=max_file_bytes)
+        for query in queries
+    ]
+    result = _merge_code_search_results("; ".join(queries), query_results, gaps)
     pull_requests = []
     if include_prs:
         urls = extract_github_pr_urls([topic, *(linked_texts or [])])
@@ -408,7 +494,19 @@ def _code_topic_evidence_markdown(
             pull_requests.append(pull_request)
     elif github_fallback:
         gaps.append("GitHub fallback was requested but PR metadata was not enabled.")
-    return code_search_markdown(result, pull_requests=pull_requests), gaps
+    merged_gaps = list(result.gaps)
+    for gap in gaps:
+        if gap not in merged_gaps:
+            merged_gaps.append(gap)
+    result = type(result)(
+        query=result.query,
+        repositories=result.repositories,
+        matches=result.matches,
+        commits=result.commits,
+        gaps=merged_gaps,
+        truncated=result.truncated,
+    )
+    return code_search_markdown(result, pull_requests=pull_requests), result.gaps
 
 
 @confluence_app.command("search")
@@ -1159,6 +1257,7 @@ def code_pr_cmd(
 def report_evidence_pack_cmd(
     topic: Optional[str] = typer.Argument(None),
     preset: Optional[str] = typer.Option(None, "--preset", help="Use a built-in query preset."),
+    query: list[str] = typer.Option([], "--query", help="Additional search query to run and merge into the evidence pack. Repeat for multiple terms."),
     confluence_space: Optional[str] = typer.Option(None, "--confluence-space"),
     jira_project: Optional[str] = typer.Option(None, "--jira-project"),
     skip_confluence: bool = typer.Option(False, "--skip-confluence"),
@@ -1200,6 +1299,7 @@ def report_evidence_pack_cmd(
         max_page_chars = max(max_page_chars, selected_preset.max_page_chars)
     if not topic:
         raise AssuranceError("Provide a topic argument or --preset.")
+    search_queries = _evidence_queries(topic, query, preset)
 
     config = load_config().atlassian if not (skip_confluence and skip_jira) else None
     cache = _cache(cache_dir, no_cache)
@@ -1217,15 +1317,23 @@ def report_evidence_pack_cmd(
         if config is None:
             raise AssuranceError("Atlassian configuration is required when Confluence evidence is included.")
         selected_space = confluence_space or config.default_confluence_space
-        cql = build_cql(topic, cql=None, space=selected_space, content_type="page")
-        confluence_search_data = _fetch_confluence_search(
-            config=config,
-            cache=cache,
-            cql=cql,
-            limit=limit,
-            expand="space,history,version,ancestors",
-            refresh=refresh,
-        )
+        cqls: list[str] = []
+        confluence_results_by_id: dict[str, dict] = {}
+        for search_query in search_queries:
+            cql = build_cql(search_query, cql=None, space=selected_space, content_type="page")
+            cqls.append(cql)
+            search_data = _fetch_confluence_search(
+                config=config,
+                cache=cache,
+                cql=cql,
+                limit=limit,
+                expand="space,history,version,ancestors",
+                refresh=refresh,
+            )
+            for item in search_data.get("results", []):
+                if item.get("id"):
+                    confluence_results_by_id.setdefault(str(item["id"]), item)
+        confluence_search_data = {"cql": "\n".join(cqls), "results": list(confluence_results_by_id.values())}
         if confluence_parent_ids:
             original_results = list(confluence_search_data.get("results", []))
             filtered_results = _filter_confluence_results_by_parent(original_results, confluence_parent_ids)
@@ -1251,7 +1359,8 @@ def report_evidence_pack_cmd(
             gaps.append("Confluence search returned no pages for the topic.")
         confluence_body = confluence_evidence_pack_markdown(
             topic=topic,
-            cql=cql,
+            cqls=cqls,
+            search_queries=search_queries,
             search_results=confluence_search_data,
             pages=confluence_pages,
             base_url=config.base_url,
@@ -1262,27 +1371,35 @@ def report_evidence_pack_cmd(
         if config is None:
             raise AssuranceError("Atlassian configuration is required when Jira evidence is included.")
         selected_project = jira_project or config.default_jira_project
-        jql = build_jql(
-            topic,
-            jql=None,
-            project=selected_project,
-            status=None,
-            issue_type=None,
-            labels=(),
-            components=(),
-            updated_after=None,
-            updated_before=None,
-            order_by="updated DESC",
-        )
+        jqls: list[str] = []
         jira_fields = _fields_with_team_field(DEFAULT_FIELDS, jira_team_field)
-        jira_search_data = _fetch_jira_search(
-            config=config,
-            cache=cache,
-            jql=jql,
-            fields=jira_fields,
-            limit=limit,
-            refresh=refresh,
-        )
+        jira_results_by_key: dict[str, dict] = {}
+        for search_query in search_queries:
+            jql = build_jql(
+                search_query,
+                jql=None,
+                project=selected_project,
+                status=None,
+                issue_type=None,
+                labels=(),
+                components=(),
+                updated_after=None,
+                updated_before=None,
+                order_by="updated DESC",
+            )
+            jqls.append(jql)
+            search_data = _fetch_jira_search(
+                config=config,
+                cache=cache,
+                jql=jql,
+                fields=jira_fields,
+                limit=limit,
+                refresh=refresh,
+            )
+            for item in search_data.get("issues", []):
+                if item.get("key"):
+                    jira_results_by_key.setdefault(str(item["key"]), item)
+        jira_search_data = {"jql": "\n".join(jqls), "issues": list(jira_results_by_key.values())}
         raw_issues = [
             _fetch_jira_issue(
                 config=config,
@@ -1306,7 +1423,8 @@ def report_evidence_pack_cmd(
             gaps.append("Jira search returned no issues for the topic.")
         jira_body = jira_evidence_pack_markdown(
             topic=topic,
-            jql=jql,
+            jqls=jqls,
+            search_queries=search_queries,
             search_results=jira_search_data,
             issues=issues,
             base_url=config.base_url,
@@ -1332,6 +1450,7 @@ def report_evidence_pack_cmd(
     if include_code:
         code_body, code_gaps = _code_topic_evidence_markdown(
             topic=topic,
+            queries=search_queries,
             repo_roots=repo_root,
             repos=repo,
             repo_file=repo_file,
@@ -1347,6 +1466,7 @@ def report_evidence_pack_cmd(
 
     body = combined_evidence_pack_markdown(
         topic=topic,
+        search_queries=search_queries,
         confluence_markdown=confluence_body,
         jira_markdown=jira_body,
         azure_markdown=azure_body,

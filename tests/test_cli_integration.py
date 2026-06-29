@@ -156,6 +156,80 @@ def test_report_evidence_pack_with_preset_uses_mocked_sources(monkeypatch, tmp_p
     assert "Microsoft.Web/sites" in text
 
 
+def test_report_evidence_pack_merges_additional_queries(monkeypatch, tmp_path: Path) -> None:
+    _set_atlassian_env(monkeypatch)
+    fetched_pages: list[str] = []
+    fetched_issues: list[str] = []
+    confluence_cqls: list[str] = []
+    jira_jqls: list[str] = []
+
+    def fake_confluence_search(**kwargs):
+        confluence_cqls.append(kwargs["cql"])
+        if "ADLI" in kwargs["cql"]:
+            return {
+                "cql": kwargs["cql"],
+                "results": [
+                    {"id": "456", "title": "Shared design"},
+                    {"id": "789", "title": "ADLI decision"},
+                ],
+            }
+        return {
+            "cql": kwargs["cql"],
+            "results": [
+                {"id": "123", "title": "Delivery design"},
+                {"id": "456", "title": "Shared design"},
+            ],
+        }
+
+    def fake_fetch_page(**kwargs):
+        fetched_pages.append(kwargs["page_id"])
+        return {"page": _confluence_page_payload(kwargs["page_id"])}
+
+    def fake_jira_search(**kwargs):
+        jira_jqls.append(kwargs["jql"])
+        if "ADLI" in kwargs["jql"]:
+            return {"jql": kwargs["jql"], "issues": [{"key": "ABC-456"}, {"key": "ABC-789"}]}
+        return {"jql": kwargs["jql"], "issues": [{"key": "ABC-123"}, {"key": "ABC-456"}]}
+
+    def fake_fetch_issue(**kwargs):
+        fetched_issues.append(kwargs["issue_key"])
+        return _jira_issue_payload(kwargs["issue_key"])
+
+    monkeypatch.setattr("assurance_cli.main._fetch_confluence_search", fake_confluence_search)
+    monkeypatch.setattr("assurance_cli.main._fetch_confluence_page", fake_fetch_page)
+    monkeypatch.setattr("assurance_cli.main._fetch_jira_search", fake_jira_search)
+    monkeypatch.setattr("assurance_cli.main._fetch_jira_issue", fake_fetch_issue)
+    output = tmp_path / "pack.md"
+
+    result = CliRunner().invoke(
+        app,
+        [
+            "report",
+            "evidence-pack",
+            "dvla result",
+            "--query",
+            "ADLI",
+            "--confluence-space",
+            "SPACE",
+            "--jira-project",
+            "ABC",
+            "--out",
+            str(output),
+        ],
+    )
+
+    text = output.read_text(encoding="utf-8")
+    assert result.exit_code == 0
+    assert len(confluence_cqls) == 2
+    assert len(jira_jqls) == 2
+    assert fetched_pages == ["123", "456", "789"]
+    assert fetched_issues == ["ABC-123", "ABC-456", "ABC-789"]
+    assert "- `dvla result`" in text
+    assert "- `ADLI`" in text
+    assert "Results from repeated source searches are merged and deduplicated" in text
+    assert text.count("## ABC-456: Booking work") == 1
+
+
 def test_report_evidence_pack_applies_configured_exclusions(monkeypatch, tmp_path: Path) -> None:
     _set_atlassian_env(monkeypatch)
 

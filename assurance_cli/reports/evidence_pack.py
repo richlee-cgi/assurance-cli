@@ -9,7 +9,8 @@ from assurance_cli.markdown import document_header
 def confluence_evidence_pack_markdown(
     *,
     topic: str,
-    cql: str,
+    cqls: list[str],
+    search_queries: list[str],
     search_results: dict[str, Any],
     pages: list[dict[str, Any]],
     base_url: str,
@@ -19,11 +20,13 @@ def confluence_evidence_pack_markdown(
         f"Confluence Evidence Pack: {topic}",
         "Confluence",
         "assurance confluence evidence-pack",
-        cql,
+        "; ".join(cqls),
     )
     body += "## Search Summary\n\n"
     body += f"- Topic: `{topic}`\n"
-    body += f"- CQL: `{cql}`\n"
+    body += "- Queries: " + ", ".join(f"`{query}`" for query in search_queries) + "\n"
+    body += "- CQL statements:\n"
+    body += "\n".join(f"  - `{cql}`" for cql in cqls) + "\n"
     body += f"- Pages retrieved: `{len(pages)}` of `{len(search_results.get('results', []))}` search results\n\n"
     body += "## Confluence Evidence\n\n"
     if not pages:
@@ -40,7 +43,8 @@ def confluence_evidence_pack_markdown(
 def jira_evidence_pack_markdown(
     *,
     topic: str,
-    jql: str,
+    jqls: list[str],
+    search_queries: list[str],
     search_results: dict[str, Any],
     issues: list[dict[str, Any]],
     base_url: str,
@@ -50,11 +54,13 @@ def jira_evidence_pack_markdown(
         f"Jira Evidence Pack: {topic}",
         "Jira",
         "assurance jira evidence-pack",
-        jql,
+        "; ".join(jqls),
     )
     body += "## Search Summary\n\n"
     body += f"- Topic: `{topic}`\n"
-    body += f"- JQL: `{jql}`\n"
+    body += "- Queries: " + ", ".join(f"`{query}`" for query in search_queries) + "\n"
+    body += "- JQL statements:\n"
+    body += "\n".join(f"  - `{jql}`" for jql in jqls) + "\n"
     body += f"- Issues retrieved: `{len(issues)}` of `{len(search_results.get('issues', []))}` search results\n\n"
     body += jira_status_summary(issues)
     body += "\n## Jira Evidence\n\n"
@@ -69,6 +75,7 @@ def jira_evidence_pack_markdown(
 def combined_evidence_pack_markdown(
     *,
     topic: str,
+    search_queries: list[str] | None = None,
     confluence_markdown: str | None,
     jira_markdown: str | None,
     azure_markdown: str | None,
@@ -88,6 +95,12 @@ def combined_evidence_pack_markdown(
     )
     body += "## Scope\n\n"
     body += f"- Topic: `{topic}`\n\n"
+    body += "## Search Strategy\n\n"
+    queries = search_queries or [topic]
+    body += "- Queries run:\n"
+    body += "\n".join(f"  - `{query}`" for query in queries) + "\n\n"
+    if len(queries) > 1:
+        body += "_Results from repeated source searches are merged and deduplicated by page ID, issue key, or local code location._\n\n"
     body += "## Sources Queried\n\n"
     body += f"- Confluence: `{'yes' if confluence_markdown is not None else 'no'}`\n"
     body += f"- Jira: `{'yes' if jira_markdown is not None else 'no'}`\n"
@@ -107,11 +120,11 @@ def combined_evidence_pack_markdown(
     body += _strip_embedded_header(dataverse_markdown) if dataverse_markdown else ("_No Dataverse evidence returned._\n" if dataverse_requested else "_Not requested._\n")
     body += "\n## Code Evidence\n\n"
     body += _strip_embedded_header(code_markdown) if code_markdown else ("_No code evidence returned._\n" if code_requested else "_Not requested._\n")
-    body += "\n## Gaps / Follow-up Questions\n\n"
+    body += "\n## Retrieval Warnings / Follow-up Questions\n\n"
     if gaps:
         body += "\n".join(f"- {gap}" for gap in gaps) + "\n"
     else:
-        body += "_No mechanical gaps identified by the retrieval commands._\n"
+        body += "_No retrieval warnings identified. This does not mean the evidence is complete or the change is assured._\n"
     body += "\n## Appendix: Commands Run\n\n"
     body += "- `assurance confluence evidence-pack ...`\n" if confluence_markdown is not None else ""
     body += "- `assurance jira evidence-pack ...`\n" if jira_markdown is not None else ""
