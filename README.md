@@ -336,9 +336,12 @@ Use repeated `--query` options when the review needs known names, acronyms, deci
 
 Architecture, delivery and risk presets also add a small visible set of preset-specific searches. For example, architecture reviews add decision-record style terms such as ADR, KDD, options papers and integration architecture around the main topic.
 
+Use `--no-preset-expansion` when you want the preset's defaults without the extra generated search terms. This is useful for keeping a run focused on the main topic plus explicit `--query` values.
+
 ```bash
 assurance report evidence-pack "dvla result" \
   --preset architecture \
+  --no-preset-expansion \
   --query ADLI \
   --query "DVLA Results Integration" \
   --query "Results Sender" \

@@ -299,6 +299,10 @@ def _evidence_queries(topic: str, explicit_queries: list[str], preset: str | Non
     return _dedupe_strings(queries)
 
 
+def _explicit_evidence_queries(topic: str, explicit_queries: list[str]) -> list[str]:
+    return _dedupe_strings([topic, *explicit_queries])
+
+
 def _preset_expanded_queries(topic: str, preset: str | None) -> list[str]:
     if preset == "architecture":
         return [
@@ -1258,6 +1262,7 @@ def report_evidence_pack_cmd(
     topic: Optional[str] = typer.Argument(None),
     preset: Optional[str] = typer.Option(None, "--preset", help="Use a built-in query preset."),
     query: list[str] = typer.Option([], "--query", help="Additional search query to run and merge into the evidence pack. Repeat for multiple terms."),
+    no_preset_expansion: bool = typer.Option(False, "--no-preset-expansion", help="Use preset defaults without adding preset-specific extra search queries."),
     confluence_space: Optional[str] = typer.Option(None, "--confluence-space"),
     jira_project: Optional[str] = typer.Option(None, "--jira-project"),
     skip_confluence: bool = typer.Option(False, "--skip-confluence"),
@@ -1299,7 +1304,7 @@ def report_evidence_pack_cmd(
         max_page_chars = max(max_page_chars, selected_preset.max_page_chars)
     if not topic:
         raise AssuranceError("Provide a topic argument or --preset.")
-    search_queries = _evidence_queries(topic, query, preset)
+    search_queries = _explicit_evidence_queries(topic, query) if no_preset_expansion else _evidence_queries(topic, query, preset)
 
     config = load_config().atlassian if not (skip_confluence and skip_jira) else None
     cache = _cache(cache_dir, no_cache)

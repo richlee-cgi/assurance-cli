@@ -230,6 +230,56 @@ def test_report_evidence_pack_merges_additional_queries(monkeypatch, tmp_path: P
     assert text.count("## ABC-456: Booking work") == 1
 
 
+def test_report_evidence_pack_can_disable_preset_expansion(monkeypatch, tmp_path: Path) -> None:
+    _set_atlassian_env(monkeypatch)
+    confluence_cqls: list[str] = []
+    jira_jqls: list[str] = []
+
+    monkeypatch.setattr(
+        "assurance_cli.main._fetch_confluence_search",
+        lambda **kwargs: confluence_cqls.append(kwargs["cql"]) or {"cql": kwargs["cql"], **_confluence_search_payload()},
+    )
+    monkeypatch.setattr("assurance_cli.main._fetch_confluence_page", lambda **kwargs: {"page": _confluence_page_payload(kwargs["page_id"])})
+    monkeypatch.setattr(
+        "assurance_cli.main._fetch_jira_search",
+        lambda **kwargs: jira_jqls.append(kwargs["jql"]) or {"jql": kwargs["jql"], **_jira_search_payload()},
+    )
+    monkeypatch.setattr("assurance_cli.main._fetch_jira_issue", lambda **kwargs: _jira_issue_payload(kwargs["issue_key"]))
+    monkeypatch.setattr(
+        "assurance_cli.main._azure_topic_evidence_markdown",
+        lambda **kwargs: (None, None),
+    )
+    output = tmp_path / "pack.md"
+
+    result = CliRunner().invoke(
+        app,
+        [
+            "report",
+            "evidence-pack",
+            "dvla result",
+            "--preset",
+            "architecture",
+            "--no-preset-expansion",
+            "--query",
+            "ADLI",
+            "--confluence-space",
+            "SPACE",
+            "--jira-project",
+            "ABC",
+            "--out",
+            str(output),
+        ],
+    )
+
+    text = output.read_text(encoding="utf-8")
+    assert result.exit_code == 0
+    assert len(confluence_cqls) == 2
+    assert len(jira_jqls) == 2
+    assert "ADR dvla result" not in text
+    assert "- `dvla result`" in text
+    assert "- `ADLI`" in text
+
+
 def test_report_evidence_pack_continues_when_atlassian_items_404(monkeypatch, tmp_path: Path) -> None:
     _set_atlassian_env(monkeypatch)
 
