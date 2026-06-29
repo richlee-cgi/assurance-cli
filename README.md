@@ -227,6 +227,7 @@ assurance presets list
 assurance presets show dataverse
 assurance report evidence-pack --preset dataverse --confluence-space SPACE --jira-project ABC --out evidence/dataverse-pack.md
 assurance report evidence-pack --preset performance --include-azure --azure-resource-group rg-example-dev --limit 20 --out evidence/performance-pack.md
+assurance report evidence-pack "dvla result" --query ADLI --query "ADR ADLI" --query OP008 --confluence-space SPACE --jira-project ABC --out evidence/dvla-result-pack.md
 assurance azure check
 assurance azure resource-search "booking" --limit 20
 assurance azure snapshot --resource-group rg-example-dev --out evidence/azure-snapshot.md
@@ -330,6 +331,23 @@ assurance report evidence-pack --preset architecture --confluence-space SPACE --
 Available presets are `architecture`, `delivery`, `operations`, `dataverse`, `performance`, and `risk`.
 
 Passing a topic with `--preset` overrides only the preset search text; the preset still supplies its inclusion defaults.
+
+Use repeated `--query` options when the review needs known names, acronyms, decision IDs or document titles in addition to the main topic. The report command runs each query against selected text-search sources, then merges and deduplicates Confluence pages, Jira issues and local code matches. The generated evidence pack includes a `Search Strategy` section showing the queries used and the generated source queries.
+
+Architecture, delivery and risk presets also add a small visible set of preset-specific searches. For example, architecture reviews add decision-record style terms such as ADR, KDD, options papers and integration architecture around the main topic.
+
+```bash
+assurance report evidence-pack "dvla result" \
+  --preset architecture \
+  --query ADLI \
+  --query "DVLA Results Integration" \
+  --query "Results Sender" \
+  --query "ADR ADLI" \
+  --query OP008 \
+  --confluence-space SPACE \
+  --jira-project ABC \
+  --out evidence/dvla-result-pack.md
+```
 
 Use `--azure-resource-group` when possible to keep Azure evidence focused:
 
