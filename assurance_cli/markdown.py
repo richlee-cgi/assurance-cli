@@ -26,9 +26,10 @@ def document_header(title: str, sources: str, command: str, scope: str) -> str:
     )
 
 
-def html_to_md(html: str | None) -> str:
+def html_to_md(html: str | None, *, base_url: str | None = None) -> str:
     if not html:
         return ""
+    html = _replace_jira_macros(html, base_url=base_url)
     html = _separate_adjacent_table_links(html)
     return html_to_markdown(html, heading_style="ATX").strip()
 
@@ -146,7 +147,7 @@ def write_output(markdown: str, out: Path | None, stdout: bool = True) -> None:
 
 def _separate_adjacent_table_links(html: str) -> str:
     cell_pattern = re.compile(r"(<t[dh]\b[^>]*>)(.*?)(</t[dh]>)", flags=re.IGNORECASE | re.DOTALL)
-    adjacent_link_pattern = re.compile(r"</a>\s*(?=<a\b)", flags=re.IGNORECASE)
+    adjacent_link_pattern = re.compile(r"</a>(?:\s|,|&nbsp;)*(?=<a\b)", flags=re.IGNORECASE)
 
     def replace_cell(match: re.Match[str]) -> str:
         opening, content, closing = match.groups()
@@ -154,3 +155,27 @@ def _separate_adjacent_table_links(html: str) -> str:
         return opening + content + closing
 
     return cell_pattern.sub(replace_cell, html)
+
+
+def _replace_jira_macros(html: str, *, base_url: str | None) -> str:
+    macro_pattern = re.compile(
+        r"<ac:structured-macro\b(?=[^>]*\bac:name=[\"']jira[\"'])[^>]*>.*?</ac:structured-macro>",
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+    key_pattern = re.compile(
+        r"<ac:parameter\b(?=[^>]*\bac:name=[\"']key[\"'])[^>]*>(.*?)</ac:parameter>",
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+
+    def replace_macro(match: re.Match[str]) -> str:
+        macro = match.group(0)
+        key_match = key_pattern.search(macro)
+        if not key_match:
+            return macro
+        key = re.sub(r"<[^>]+>", "", key_match.group(1)).strip()
+        if not key:
+            return macro
+        href = f"{base_url.rstrip('/')}/browse/{key}" if base_url else f"/browse/{key}"
+        return f'<a href="{href}">{key}</a>'
+
+    return macro_pattern.sub(replace_macro, html)

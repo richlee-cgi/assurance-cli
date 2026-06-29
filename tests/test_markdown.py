@@ -21,6 +21,28 @@ def test_html_to_md_separates_adjacent_table_links() -> None:
     assert "| [DSP-1](https://example.atlassian.net/browse/DSP-1)<br>[DSP-2](https://example.atlassian.net/browse/DSP-2) |" in markdown
 
 
+def test_html_to_md_converts_jira_macros_in_table_cells() -> None:
+    markdown = html_to_md(
+        '<table><tr><th>Story Link</th></tr><tr><td>'
+        '<ac:structured-macro ac:name="jira" ac:schema-version="1">'
+        '<ac:parameter ac:name="key">DSP-2616</ac:parameter>'
+        '<ac:parameter ac:name="serverId">b4f41e55-a4ed-3def-a8ff-ed397f538d8a</ac:parameter>'
+        '<ac:parameter ac:name="server">System Jira</ac:parameter>'
+        '</ac:structured-macro>, '
+        '<ac:structured-macro ac:name="jira" ac:schema-version="1">'
+        '<ac:parameter ac:name="key">DSP-2617</ac:parameter>'
+        '<ac:parameter ac:name="serverId">b4f41e55-a4ed-3def-a8ff-ed397f538d8a</ac:parameter>'
+        '<ac:parameter ac:name="server">System Jira</ac:parameter>'
+        '</ac:structured-macro>'
+        '</td></tr></table>',
+        base_url="https://example.atlassian.net",
+    )
+
+    assert "b4f41e55" not in markdown
+    assert "System Jira" not in markdown
+    assert "| [DSP-2616](https://example.atlassian.net/browse/DSP-2616)<br>[DSP-2617](https://example.atlassian.net/browse/DSP-2617) |" in markdown
+
+
 def test_adf_to_markdown_basic_marks() -> None:
     doc = {
         "type": "doc",

@@ -15,7 +15,7 @@ def confluence_search_markdown(data: dict[str, Any], base_url: str) -> str:
 def confluence_page_markdown(data: dict[str, Any], base_url: str, max_body_chars: int) -> str:
     page = data["page"]
     lines = [_confluence_page_summary(page, base_url)]
-    body = _page_body(page)
+    body = _page_body(page, base_url)
     if max_body_chars and len(body) > max_body_chars:
         body = body[:max_body_chars].rstrip() + "\n\n_[Body truncated]_"
     if body:
@@ -88,12 +88,12 @@ def _confluence_page_summary(item: dict[str, Any], base_url: str) -> str:
     return "\n".join(lines)
 
 
-def _page_body(page: dict[str, Any]) -> str:
+def _page_body(page: dict[str, Any], base_url: str) -> str:
     body = page.get("body", {})
     for key in ("storage", "view", "export_view", "anonymous_export_view"):
         value = body.get(key, {}).get("value")
         if value:
-            return html_to_md(value)
+            return html_to_md(value, base_url=base_url)
     return ""
 
 
@@ -128,4 +128,3 @@ def _jira_issue_summary(issue: dict[str, Any], base_url: str, *, include_descrip
         description = adf_to_markdown(fields.get("description")).strip()
         lines.extend(["", "### Description", "", description or "_No description._"])
     return "\n".join(lines)
-
