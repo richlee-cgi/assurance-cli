@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -28,6 +29,7 @@ def document_header(title: str, sources: str, command: str, scope: str) -> str:
 def html_to_md(html: str | None) -> str:
     if not html:
         return ""
+    html = _separate_adjacent_table_links(html)
     return html_to_markdown(html, heading_style="ATX").strip()
 
 
@@ -140,3 +142,15 @@ def write_output(markdown: str, out: Path | None, stdout: bool = True) -> None:
         out.write_text(markdown, encoding="utf-8")
     if stdout:
         print(markdown, end="" if markdown.endswith("\n") else "\n")
+
+
+def _separate_adjacent_table_links(html: str) -> str:
+    cell_pattern = re.compile(r"(<t[dh]\b[^>]*>)(.*?)(</t[dh]>)", flags=re.IGNORECASE | re.DOTALL)
+    adjacent_link_pattern = re.compile(r"</a>\s*(?=<a\b)", flags=re.IGNORECASE)
+
+    def replace_cell(match: re.Match[str]) -> str:
+        opening, content, closing = match.groups()
+        content = adjacent_link_pattern.sub("</a>&lt;br&gt;", content)
+        return opening + content + closing
+
+    return cell_pattern.sub(replace_cell, html)
