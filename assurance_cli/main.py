@@ -1322,14 +1322,18 @@ def report_evidence_pack_cmd(
         for search_query in search_queries:
             cql = build_cql(search_query, cql=None, space=selected_space, content_type="page")
             cqls.append(cql)
-            search_data = _fetch_confluence_search(
-                config=config,
-                cache=cache,
-                cql=cql,
-                limit=limit,
-                expand="space,history,version,ancestors",
-                refresh=refresh,
-            )
+            try:
+                search_data = _fetch_confluence_search(
+                    config=config,
+                    cache=cache,
+                    cql=cql,
+                    limit=limit,
+                    expand="space,history,version,ancestors",
+                    refresh=refresh,
+                )
+            except AssuranceError as exc:
+                gaps.append(f"Confluence search failed for query `{search_query}`: {exc}")
+                continue
             for item in search_data.get("results", []):
                 if item.get("id"):
                     confluence_results_by_id.setdefault(str(item["id"]), item)
@@ -1341,20 +1345,27 @@ def report_evidence_pack_cmd(
             confluence_search_data = {**confluence_search_data, "results": filtered_results}
             if excluded_confluence_results:
                 gaps.append(f"Excluded {excluded_confluence_results} Confluence search result(s) under configured parent page exclusions.")
-        confluence_pages = [
-            _fetch_confluence_page(
-                config=config,
-                cache=cache,
-                page_id=str(item["id"]),
-                body_format="storage",
-                include_comments=False,
-                include_children=False,
-                include_attachments=False,
-                refresh=refresh,
-            )
-            for item in confluence_search_data.get("results", [])
-            if item.get("id")
-        ]
+        confluence_pages = []
+        for item in confluence_search_data.get("results", []):
+            if not item.get("id"):
+                continue
+            page_id = str(item["id"])
+            try:
+                confluence_pages.append(
+                    _fetch_confluence_page(
+                        config=config,
+                        cache=cache,
+                        page_id=page_id,
+                        body_format="storage",
+                        include_comments=False,
+                        include_children=False,
+                        include_attachments=False,
+                        refresh=refresh,
+                    )
+                )
+            except AssuranceError as exc:
+                title = item.get("title") or page_id
+                gaps.append(f"Confluence page `{title}` (`{page_id}`) could not be retrieved: {exc}")
         if not confluence_pages:
             gaps.append("Confluence search returned no pages for the topic.")
         confluence_body = confluence_evidence_pack_markdown(
@@ -1388,31 +1399,41 @@ def report_evidence_pack_cmd(
                 order_by="updated DESC",
             )
             jqls.append(jql)
-            search_data = _fetch_jira_search(
-                config=config,
-                cache=cache,
-                jql=jql,
-                fields=jira_fields,
-                limit=limit,
-                refresh=refresh,
-            )
+            try:
+                search_data = _fetch_jira_search(
+                    config=config,
+                    cache=cache,
+                    jql=jql,
+                    fields=jira_fields,
+                    limit=limit,
+                    refresh=refresh,
+                )
+            except AssuranceError as exc:
+                gaps.append(f"Jira search failed for query `{search_query}`: {exc}")
+                continue
             for item in search_data.get("issues", []):
                 if item.get("key"):
                     jira_results_by_key.setdefault(str(item["key"]), item)
         jira_search_data = {"jql": "\n".join(jqls), "issues": list(jira_results_by_key.values())}
-        raw_issues = [
-            _fetch_jira_issue(
-                config=config,
-                cache=cache,
-                issue_key=str(item["key"]),
-                fields=jira_fields,
-                include_comments=include_comments,
-                include_changelog=False,
-                refresh=refresh,
-            )
-            for item in jira_search_data.get("issues", [])
-            if item.get("key")
-        ]
+        raw_issues = []
+        for item in jira_search_data.get("issues", []):
+            if not item.get("key"):
+                continue
+            issue_key = str(item["key"])
+            try:
+                raw_issues.append(
+                    _fetch_jira_issue(
+                        config=config,
+                        cache=cache,
+                        issue_key=issue_key,
+                        fields=jira_fields,
+                        include_comments=include_comments,
+                        include_changelog=False,
+                        refresh=refresh,
+                    )
+                )
+            except AssuranceError as exc:
+                gaps.append(f"Jira issue `{issue_key}` could not be retrieved: {exc}")
         issues = _filter_jira_issues_by_team(raw_issues, jira_team_field, exclude_jira_team)
         excluded_jira_issues = len(raw_issues) - len(issues)
         if excluded_jira_issues:

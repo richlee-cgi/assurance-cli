@@ -230,6 +230,107 @@ def test_report_evidence_pack_merges_additional_queries(monkeypatch, tmp_path: P
     assert text.count("## ABC-456: Booking work") == 1
 
 
+def test_report_evidence_pack_continues_when_atlassian_items_404(monkeypatch, tmp_path: Path) -> None:
+    _set_atlassian_env(monkeypatch)
+
+    monkeypatch.setattr(
+        "assurance_cli.main._fetch_confluence_search",
+        lambda **kwargs: {
+            "cql": kwargs["cql"],
+            "results": [
+                {"id": "123", "title": "Available page"},
+                {"id": "404", "title": "Moved page"},
+            ],
+        },
+    )
+
+    def fake_fetch_page(**kwargs):
+        if kwargs["page_id"] == "404":
+            raise AssuranceError("Atlassian request failed: 404 Not Found.")
+        return {"page": _confluence_page_payload(kwargs["page_id"])}
+
+    monkeypatch.setattr("assurance_cli.main._fetch_confluence_page", fake_fetch_page)
+    monkeypatch.setattr(
+        "assurance_cli.main._fetch_jira_search",
+        lambda **kwargs: {"jql": kwargs["jql"], "issues": [{"key": "ABC-123"}, {"key": "ABC-404"}]},
+    )
+
+    def fake_fetch_issue(**kwargs):
+        if kwargs["issue_key"] == "ABC-404":
+            raise AssuranceError("Atlassian request failed: 404 Not Found.")
+        return _jira_issue_payload(kwargs["issue_key"])
+
+    monkeypatch.setattr("assurance_cli.main._fetch_jira_issue", fake_fetch_issue)
+    output = tmp_path / "pack.md"
+
+    result = CliRunner().invoke(
+        app,
+        [
+            "report",
+            "evidence-pack",
+            "booking",
+            "--confluence-space",
+            "SPACE",
+            "--jira-project",
+            "ABC",
+            "--out",
+            str(output),
+        ],
+    )
+
+    text = output.read_text(encoding="utf-8")
+    assert result.exit_code == 0
+    assert "System architecture evidence" in text
+    assert "ABC-123: Booking work" in text
+    assert "Confluence page `Moved page` (`404`) could not be retrieved" in text
+    assert "Jira issue `ABC-404` could not be retrieved" in text
+
+
+def test_report_evidence_pack_continues_when_one_query_fails(monkeypatch, tmp_path: Path) -> None:
+    _set_atlassian_env(monkeypatch)
+
+    def fake_confluence_search(**kwargs):
+        if "ADLI" in kwargs["cql"]:
+            raise AssuranceError("Atlassian request failed: 404 Not Found.")
+        return {"cql": kwargs["cql"], **_confluence_search_payload()}
+
+    monkeypatch.setattr("assurance_cli.main._fetch_confluence_search", fake_confluence_search)
+    monkeypatch.setattr("assurance_cli.main._fetch_confluence_page", lambda **kwargs: {"page": _confluence_page_payload(kwargs["page_id"])})
+
+    def fake_jira_search(**kwargs):
+        if "ADLI" in kwargs["jql"]:
+            raise AssuranceError("Atlassian request failed: 404 Not Found.")
+        return {"jql": kwargs["jql"], **_jira_search_payload()}
+
+    monkeypatch.setattr("assurance_cli.main._fetch_jira_search", fake_jira_search)
+    monkeypatch.setattr("assurance_cli.main._fetch_jira_issue", lambda **kwargs: _jira_issue_payload(kwargs["issue_key"]))
+    output = tmp_path / "pack.md"
+
+    result = CliRunner().invoke(
+        app,
+        [
+            "report",
+            "evidence-pack",
+            "booking",
+            "--query",
+            "ADLI",
+            "--confluence-space",
+            "SPACE",
+            "--jira-project",
+            "ABC",
+            "--out",
+            str(output),
+        ],
+    )
+
+    text = output.read_text(encoding="utf-8")
+    assert result.exit_code == 0
+    assert "System architecture evidence" in text
+    assert "ABC-123: Booking work" in text
+    assert "Confluence search failed for query `ADLI`" in text
+    assert "Jira search failed for query `ADLI`" in text
+
+
 def test_report_evidence_pack_applies_configured_exclusions(monkeypatch, tmp_path: Path) -> None:
     _set_atlassian_env(monkeypatch)
 
